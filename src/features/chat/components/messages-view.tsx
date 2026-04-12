@@ -30,12 +30,12 @@ export function MessagesView({ conversations, initialMessages }: MessagesViewPro
       {/* ── Conversation List (Left Panel on Desktop / Full on Mobile) ── */}
       <div 
         className={cn(
-          "w-full md:w-80 shrink-0 border-r border-border flex flex-col bg-card transition-all duration-300",
+          "w-full md:w-[340px] shrink-0 border-r border-border flex flex-col bg-slate-50/50 dark:bg-background transition-all duration-300",
           activeId ? "hidden md:flex" : "flex"
         )}
       >
-        <div className="px-4 py-4 border-b border-border shrink-0">
-          <h1 className="text-xl md:text-lg font-bold font-heading text-foreground">Messages</h1>
+        <div className="px-5 py-4 border-b border-border/50 shrink-0 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+          <h1 className="text-xl md:text-[22px] font-bold font-heading text-slate-900 dark:text-white">Messages</h1>
         </div>
         <ConversationList
           conversations={conversations}

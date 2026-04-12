@@ -27,7 +27,7 @@ export function UserAvatar({ user, size = "md", className, isOnline }: UserAvata
       </Avatar>
       
       {isOnline && (
-        <span className="absolute bottom-0 right-0 online-dot" />
+        <span className="absolute bottom-[2%] right-[2%] w-2.5 h-2.5 rounded-full bg-success ring-2 ring-background z-10" />
       )}
     </div>
   );

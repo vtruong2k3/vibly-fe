@@ -121,44 +121,48 @@ export function ChatPanel({
         </div>
       </ScrollArea>
 
-      {/* ── Input Bar ── */}
-      <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-card shrink-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 rounded-xl text-muted-foreground hover:text-accent shrink-0"
-          aria-label="Add emoji"
-        >
-          <Smile className="h-5 w-5" />
-        </Button>
+      {/* ── Input Bar (Liquid Glass) ── */}
+      <div className="px-4 md:px-6 py-4 bg-transparent shrink-0">
+        <div className="flex items-end gap-2 bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl p-2 rounded-[32px] border border-white/40 dark:border-white/10 focus-within:border-primary/40 focus-within:ring-[3px] focus-within:ring-primary/10 transition-all duration-300 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 rounded-full text-slate-500 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 shrink-0 transition-colors"
+            aria-label="Add emoji"
+          >
+            <Smile className="h-6 w-6" />
+          </Button>
 
-        <Input
-          id="chat-input"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage();
-            }
-          }}
-          placeholder="Write a message..."
-          className="flex-1 rounded-xl h-10 bg-muted border-transparent dark:border-border/60 focus-visible:ring-primary text-sm"
-          autoComplete="off"
-        />
+          <Input
+            id="chat-input"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            placeholder="Type a message..."
+            className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 min-h-[40px] px-3 py-2 text-[15px] resize-none placeholder:text-slate-500/80 dark:placeholder:text-slate-400"
+            autoComplete="off"
+          />
 
-        <Button
-          size="icon"
-          className={cn(
-            "h-9 w-9 rounded-xl shrink-0 transition-all",
-            !draft.trim() && "opacity-50",
-          )}
-          onClick={sendMessage}
-          disabled={!draft.trim()}
-          aria-label="Send message"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
+          <Button
+            size="icon"
+            className={cn(
+              "h-10 w-10 rounded-full shrink-0 transition-all duration-300 shadow-md group disabled:shadow-none disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400",
+              draft.trim() 
+                ? "bg-gradient-to-br from-primary to-blue-500 text-white shadow-primary/25 hover:shadow-primary/40 hover:scale-105 active:scale-95" 
+                : ""
+            )}
+            onClick={sendMessage}
+            disabled={!draft.trim()}
+            aria-label="Send message"
+          >
+            <Send className={cn("h-4 w-4", draft.trim() && "ml-0.5")} />
+          </Button>
+        </div>
       </div>
     </div>
   );
