@@ -4,7 +4,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/lib/api/constants";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,12 +22,17 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas/login.schema";
+import { useAuthStore } from "@/store/auth.store";
 
 // ─── LoginForm Component ─────────────────────────────────────────
 // Client Component: requires form state, event handlers
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const login = useAuthStore((s) => s.login);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -35,10 +45,22 @@ export function LoginForm() {
 
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
-    // TODO: Replace with actual API mutation when backend integrated
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    console.log("[Login Mock]", values);
-    setIsLoading(false);
+    try {
+      await login({ email: values.email, password: values.password });
+      // Reset useMe query to clear any cached 'isError' state from when user was logged out
+      await queryClient.resetQueries({ queryKey: QUERY_KEYS.me });
+      toast.success("Welcome back!");
+      const redirectTo = searchParams.get("redirect") || "/";
+      router.push(redirectTo);
+    } catch (error) {
+      if (isAxiosError(error) && error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

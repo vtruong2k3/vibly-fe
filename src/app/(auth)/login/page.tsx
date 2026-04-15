@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { LoginForm } from "@/features/auth/components/login-form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,9 +19,9 @@ const COMMUNITY_AVATARS = [
 // ─── Login Page — Server Component ───────────────────────────────
 export default function LoginPage() {
   return (
-    <div className="w-full max-w-5xl mx-auto min-h-screen flex">
+    <div className="w-full min-h-screen flex">
       {/* ── Left: Branding ── */}
-      <div className="hidden lg:flex flex-col flex-1 bg-primary relative overflow-hidden p-12 text-primary-foreground">
+      <div className="hidden lg:flex flex-col w-1/2 bg-primary relative overflow-hidden p-12 text-primary-foreground min-h-screen">
         {/* Decorative blobs */}
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
@@ -85,7 +86,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right: Form ── */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-card">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-16 bg-card min-h-screen">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
@@ -95,7 +96,9 @@ export default function LoginPage() {
             <span className="text-xl font-bold font-heading text-foreground">Vibly</span>
           </div>
 
-          <LoginForm />
+          <Suspense fallback={<div className="h-[400px] flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+            <LoginForm />
+          </Suspense>
         </div>
       </div>
     </div>

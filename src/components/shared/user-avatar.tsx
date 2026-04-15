@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import type { User } from "@/types";
 
 interface UserAvatarProps {
-  user: User | Pick<User, "displayName" | "avatarUrl">;
+  user?: User | Pick<User, "displayName" | "avatarUrl"> | null;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
   isOnline?: boolean;
@@ -17,12 +17,15 @@ const sizeClasses = {
 };
 
 export function UserAvatar({ user, size = "md", className, isOnline }: UserAvatarProps) {
+  const avatarUrl = user?.avatarUrl ?? undefined;
+  const initial = user?.displayName?.charAt(0) ?? "?";
+
   return (
     <div className={cn("relative inline-block", className)}>
       <Avatar className={cn(sizeClasses[size])}>
-        <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName} />
+        <AvatarImage src={avatarUrl} alt={user?.displayName ?? "User avatar"} />
         <AvatarFallback className="bg-primary/10 text-primary font-bold">
-          {user.displayName.charAt(0)}
+          {initial}
         </AvatarFallback>
       </Avatar>
       

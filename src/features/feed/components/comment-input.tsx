@@ -1,28 +1,35 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
 import { ReplyAction } from "./reply-action";
-import { MOCK_CURRENT_USER } from "@/lib/mock-data/feed";
+import { useMe } from "@/hooks/use-users";
 import type { User } from "@/types";
 
 // ─── CommentInput ──────────────────────────────────────────────────
-// Auto-expanding textarea for composing new comments on a post.
-// On submit, logs the value (no backend yet).
 
 interface CommentInputProps {
   postId: string;
   replyToUser: User | null;
   onCancelReply: () => void;
+  onSubmit: (content: string) => void;
+  isSubmitting?: boolean;
 }
 
-export function CommentInput({ postId, replyToUser, onCancelReply }: CommentInputProps) {
+export function CommentInput({
+  postId,
+  replyToUser,
+  onCancelReply,
+  onSubmit,
+  isSubmitting = false,
+}: CommentInputProps) {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { data: me } = useMe();
 
-  // Auto focus when replyToUser changes
+  // Auto-focus when replying to someone
   useEffect(() => {
     if (replyToUser && inputRef.current) {
       inputRef.current.focus();
@@ -31,25 +38,25 @@ export function CommentInput({ postId, replyToUser, onCancelReply }: CommentInpu
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!value.trim()) return;
-    
-    if (replyToUser) {
-      console.log("[CommentInput] Reply to", replyToUser.username, "for post:", postId, "->", value);
-      onCancelReply();
-    } else {
-      console.log("[CommentInput] Submit for post:", postId, "->", value);
-    }
-    
+    const trimmed = value.trim();
+    if (!trimmed || isSubmitting) return;
+
+    const content = replyToUser
+      ? `@${replyToUser.username} ${trimmed}`
+      : trimmed;
+
+    onSubmit(content);
     setValue("");
+    onCancelReply();
   };
 
   return (
     <form
       onSubmit={handleSubmit}
       className="flex items-start gap-3 pt-1"
-      aria-label="Write a comment"
+      aria-label="Viết bình luận"
     >
-      <UserAvatar user={MOCK_CURRENT_USER} size="sm" className="shrink-0 mt-1" />
+      <UserAvatar user={me} size="sm" className="shrink-0 mt-1" />
 
       <div className="flex-1 flex flex-col">
         <ReplyAction replyToUser={replyToUser} onCancelReply={onCancelReply} />
@@ -65,22 +72,31 @@ export function CommentInput({ postId, replyToUser, onCancelReply }: CommentInpu
                 e.currentTarget.form?.requestSubmit();
               }
             }}
-            placeholder={replyToUser ? `Replying to @${replyToUser.username}...` : "Write a comment..."}
+            placeholder={
+              replyToUser
+                ? `Phản hồi @${replyToUser.username}...`
+                : "Viết bình luận..."
+            }
             rows={1}
             maxLength={500}
+            disabled={isSubmitting}
             className="w-full resize-none rounded-2xl bg-muted/60 border-transparent px-4 py-2.5 pr-10 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-border hover:bg-muted/80 transition-colors shadow-none"
             style={{ fieldSizing: "content" } as React.CSSProperties}
-            aria-label="Comment text"
+            aria-label="Nội dung bình luận"
           />
           <Button
             type="submit"
             size="icon"
             variant="ghost"
-            disabled={!value.trim()}
+            disabled={!value.trim() || isSubmitting}
             className="absolute right-1.5 bottom-[5px] h-7 w-7 rounded-full text-primary hover:bg-primary/10 disabled:opacity-30"
-            aria-label="Post comment"
+            aria-label="Gửi bình luận"
           >
-            <Send className="h-4 w-4" />
+            {isSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>

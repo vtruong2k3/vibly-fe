@@ -32,6 +32,7 @@ export interface Post {
   commentCount: number;
   shareCount: number;
   isLiked: boolean;
+  isSaved?: boolean;
   visibility: PostVisibility;
   createdAt: string; // ISO 8601
 }
@@ -126,6 +127,7 @@ export interface CallRoom {
   id: string;
   name: string;
   startedAt: string; // ISO 8601
+  callType?: "AUDIO" | "VIDEO";
   participants: CallParticipant[];
 }
 

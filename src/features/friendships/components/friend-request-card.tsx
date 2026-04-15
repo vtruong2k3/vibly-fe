@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { FriendRequest } from "@/types";
+import { useAcceptFriendRequest, useRejectFriendRequest } from "@/hooks/use-users";
 
 interface FriendRequestCardProps {
   request: FriendRequest;
@@ -19,16 +20,17 @@ export function FriendRequestCard({
   onActionComplete,
 }: FriendRequestCardProps) {
   const [isHandled, setIsHandled] = useState(false);
+  const { mutate: accept, isPending: isAccepting } = useAcceptFriendRequest();
+  const { mutate: reject, isPending: isRejecting } = useRejectFriendRequest();
 
-  const timeAgo = formatDistanceToNow(new Date(request.createdAt), {
-    addSuffix: true,
-  });
+  const timeAgo = formatDistanceToNow(new Date(request.createdAt), { addSuffix: true });
 
   const handleAction = (action: "accept" | "decline") => {
-    // Make a visual exit animation before removing the card
-    setIsHandled(true);
-    console.log(`[Friend Request] ${action}: `, request.id);
-    setTimeout(() => onActionComplete?.(), 300);
+    if (action === "accept") {
+      accept(request.id, { onSuccess: () => { setIsHandled(true); onActionComplete?.(); } });
+    } else {
+      reject(request.id, { onSuccess: () => { setIsHandled(true); onActionComplete?.(); } });
+    }
   };
 
   return (
@@ -67,6 +69,7 @@ export function FriendRequestCard({
             <Button
               className="flex-1 rounded-xl gap-2 font-medium bg-primary hover:bg-primary/90 text-primary-foreground"
               onClick={() => handleAction("accept")}
+              disabled={isAccepting || isRejecting}
             >
               <Check className="h-4 w-4" />
               Accept
@@ -75,6 +78,7 @@ export function FriendRequestCard({
               variant="outline"
               className="flex-1 rounded-xl gap-2 font-medium border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
               onClick={() => handleAction("decline")}
+              disabled={isAccepting || isRejecting}
             >
               <X className="h-4 w-4" />
               Decline

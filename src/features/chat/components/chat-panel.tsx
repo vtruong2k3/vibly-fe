@@ -1,54 +1,46 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Phone, Video, MoreHorizontal, Smile } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Send, Phone, Video, MoreHorizontal, Smile, Loader2 } from "lucide-react";
 import { UserHeader } from "@/components/shared/user-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatBubble } from "./chat-bubble";
 import { cn } from "@/lib/utils";
-import type { Conversation, Message } from "@/types";
+import { useMessagesQuery, useSendMessage } from "@/hooks/use-conversations";
+import type { Conversation } from "@/types";
 
-// ─── Props ────────────────────────────────────────────────────────
+// ─── Props ────────────────────────────────────────────────────────────────────
 interface ChatPanelProps {
   conversation: Conversation;
-  messages: Message[];
+  // eslint-disable-next-line react/no-unused-prop-types
+  messages?: unknown[]; // kept for backwards compat — panel now self-fetches
   currentUserId: string;
   onBack?: () => void;
 }
 
-// ─── ChatPanel ────────────────────────────────────────────────────
-// Client Component: requires input state and scroll management
-export function ChatPanel({
-  conversation,
-  messages: initialMessages,
-  currentUserId,
-  onBack,
-}: ChatPanelProps) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+// ─── ChatPanel ────────────────────────────────────────────────────────────────
+export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProps) {
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const conversationId = conversation.id;
+
+  const { data, isLoading } = useMessagesQuery(conversationId);
+  const { mutate: send, isPending: isSending } = useSendMessage(conversationId);
+
+  // Flatten paginated messages (newest last)
+  const messages = data?.pages.flatMap((p) => p.messages).reverse() ?? [];
 
   // Auto-scroll to latest message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages.length]);
 
   const sendMessage = () => {
-    if (!draft.trim()) return;
-    const newMsg: Message = {
-      id: `mock-${Date.now()}`,
-      conversationId: conversation.id,
-      senderId: currentUserId,
-      content: draft.trim(),
-      status: "sending",
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, newMsg]);
+    if (!draft.trim() || isSending) return;
+    send({ messageType: "TEXT", content: draft.trim() });
     setDraft("");
-    // TODO: Replace with Socket.IO emit when realtime is connected
   };
 
   return (
@@ -64,7 +56,7 @@ export function ChatPanel({
               onClick={onBack}
               aria-label="Back to conversations"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             </Button>
           )}
           <UserHeader
@@ -79,28 +71,13 @@ export function ChatPanel({
 
         {/* Header actions */}
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-[--color-success]"
-            aria-label="Voice call"
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-[--color-success]" aria-label="Voice call">
             <Phone className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-primary"
-            aria-label="Video call"
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-primary" aria-label="Video call">
             <Video className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-lg text-muted-foreground"
-            aria-label="More options"
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground" aria-label="More options">
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </div>
@@ -109,10 +86,15 @@ export function ChatPanel({
       {/* ── Messages ── */}
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-2">
+          {isLoading && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
           {messages.map((msg) => (
             <ChatBubble
               key={msg.id}
-              message={msg}
+              message={msg as never}
               isMine={msg.senderId === currentUserId}
               displayName={conversation.participant.displayName}
             />
@@ -124,12 +106,7 @@ export function ChatPanel({
       {/* ── Input Bar (Liquid Glass) ── */}
       <div className="px-4 md:px-6 py-4 bg-transparent shrink-0">
         <div className="flex items-end gap-2 bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl p-2 rounded-[32px] border border-white/40 dark:border-white/10 focus-within:border-primary/40 focus-within:ring-[3px] focus-within:ring-primary/10 transition-all duration-300 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full text-slate-500 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 shrink-0 transition-colors"
-            aria-label="Add emoji"
-          >
+          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-slate-500 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 shrink-0 transition-colors" aria-label="Add emoji">
             <Smile className="h-6 w-6" />
           </Button>
 
@@ -152,15 +129,19 @@ export function ChatPanel({
             size="icon"
             className={cn(
               "h-10 w-10 rounded-full shrink-0 transition-all duration-300 shadow-md group disabled:shadow-none disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400",
-              draft.trim() 
-                ? "bg-gradient-to-br from-primary to-blue-500 text-white shadow-primary/25 hover:shadow-primary/40 hover:scale-105 active:scale-95" 
-                : ""
+              draft.trim()
+                ? "bg-gradient-to-br from-primary to-blue-500 text-white shadow-primary/25 hover:shadow-primary/40 hover:scale-105 active:scale-95"
+                : "",
             )}
             onClick={sendMessage}
-            disabled={!draft.trim()}
+            disabled={!draft.trim() || isSending}
             aria-label="Send message"
           >
-            <Send className={cn("h-4 w-4", draft.trim() && "ml-0.5")} />
+            {isSending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className={cn("h-4 w-4", draft.trim() && "ml-0.5")} />
+            )}
           </Button>
         </div>
       </div>

@@ -1,16 +1,19 @@
+"use client";
+
 import type { Metadata } from "next";
-import { CheckCheck } from "lucide-react";
+import { CheckCheck, Loader2, BellRing } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NotificationsList } from "@/features/notifications/components/notifications-list";
-import { MOCK_NOTIFICATIONS } from "@/lib/mock-data/notifications";
+import { useNotificationsQuery, useMarkAllRead } from "@/hooks/use-notifications";
+import { EmptyState } from "@/components/shared/empty-state";
 
-export const metadata: Metadata = {
-  title: "Notifications | Vibly",
-  description: "View your recent notifications on Vibly.",
-};
-
+// ─── Notifications Page — Client Component ────────────────────────────────────
 export default function NotificationsPage() {
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.isRead).length;
+  const { data, isLoading, isError } = useNotificationsQuery();
+  const { mutate: markAllRead, isPending } = useMarkAllRead();
+
+  const notifications = data?.notifications ?? [];
+  const unreadCount = notifications.filter((n: { isRead: boolean }) => !n.isRead).length;
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -23,16 +26,37 @@ export default function NotificationsPage() {
             </span>
           )}
         </h1>
-        
+
         {unreadCount > 0 && (
-          <Button variant="ghost" className="text-primary font-medium gap-2 hidden sm:flex">
+          <Button
+            variant="ghost"
+            className="text-primary font-medium gap-2 hidden sm:flex"
+            onClick={() => markAllRead()}
+            disabled={isPending}
+          >
             <CheckCheck className="h-4 w-4" />
             Mark all as read
           </Button>
         )}
       </div>
 
-      <NotificationsList notifications={MOCK_NOTIFICATIONS} />
+      {isLoading && (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {isError && (
+        <EmptyState
+          icon={<BellRing className="h-8 w-8" />}
+          headline="Failed to load notifications"
+          description="Please refresh the page."
+        />
+      )}
+
+      {!isLoading && !isError && (
+        <NotificationsList notifications={notifications} />
+      )}
     </div>
   );
 }

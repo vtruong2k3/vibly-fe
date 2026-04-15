@@ -1,69 +1,78 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquareDashed } from "lucide-react";
-import { MOCK_CONVERSATIONS, MOCK_MESSAGES_CONV1 } from "@/lib/mock-data/messages";
-import { MOCK_CURRENT_USER } from "@/lib/mock-data/feed";
+import { MessageSquareDashed, Loader2 } from "lucide-react";
 import { ConversationList } from "@/features/chat/components/conversation-list";
 import { ChatPanel } from "@/features/chat/components/chat-panel";
-import type { Conversation, Message } from "@/types";
-import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useConversationsQuery, useMarkConversationRead } from "@/hooks/use-conversations";
+import { useMe } from "@/hooks/use-users";
+import { cn } from "@/lib/utils";
 
+// ─── MessagesView — Client Component ─────────────────────────────────────────
+export function MessagesView() {
+  const { data: conversationsData, isLoading } = useConversationsQuery();
+  const { data: me } = useMe();
+  const { mutate: markRead } = useMarkConversationRead();
 
-// ─── MessagesView — Client Component ─────────────────────────────
-// Needs state: selectedConversationId
-// Server data is passed in from the page (mock for now)
-interface MessagesViewProps {
-  conversations: Conversation[];
-  initialMessages: Record<string, Message[]>;
-}
+  const conversations = conversationsData?.conversations ?? [];
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-export function MessagesView({ conversations, initialMessages }: MessagesViewProps) {
-  const [activeId, setActiveId] = useState<string | null>(conversations[0]?.id ?? null);
+  const handleSelect = (id: string) => {
+    setActiveId(id);
+    markRead(id);
+  };
 
-  const activeConversation = conversations.find((c) => c.id === activeId) ?? null;
-  const activeMessages = activeId ? (initialMessages[activeId] ?? []) : [];
+  const activeConversation = conversations.find((c: { id: string }) => c.id === activeId) ?? null;
 
   return (
     <div className="flex h-full w-full overflow-hidden relative">
-      {/* ── Conversation List (Left Panel on Desktop / Full on Mobile) ── */}
-      <div 
+      {/* ── Conversation List ── */}
+      <div
         className={cn(
           "w-full md:w-[340px] shrink-0 border-r border-border flex flex-col bg-slate-50/50 dark:bg-background transition-all duration-300",
-          activeId ? "hidden md:flex" : "flex"
+          activeId ? "hidden md:flex" : "flex",
         )}
       >
         <div className="px-5 py-4 border-b border-border/50 shrink-0 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-          <h1 className="text-xl md:text-[22px] font-bold font-heading text-slate-900 dark:text-white">Messages</h1>
+          <h1 className="text-xl md:text-[22px] font-bold font-heading text-slate-900 dark:text-white">
+            Messages
+          </h1>
         </div>
-        <ConversationList
-          conversations={conversations}
-          activeId={activeId}
-          onSelect={setActiveId}
-        />
+
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <ConversationList
+            conversations={conversations}
+            activeId={activeId}
+            onSelect={handleSelect}
+          />
+        )}
       </div>
 
-      {/* ── Chat Panel (Right Area on Desktop / Full on Mobile) ── */}
-      <div 
+      {/* ── Chat Panel ── */}
+      <div
         className={cn(
           "flex-1 flex flex-col transition-all duration-300 bg-background",
-          !activeId ? "hidden md:flex" : "flex"
+          !activeId ? "hidden md:flex" : "flex",
         )}
       >
         {activeConversation ? (
           <ChatPanel
             conversation={activeConversation}
-            messages={activeMessages}
-            currentUserId={MOCK_CURRENT_USER.id}
+            messages={[]}
+            currentUserId={me?.id ?? ""}
             onBack={() => setActiveId(null)}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center bg-muted/10 h-full">
-            <EmptyState 
+            <EmptyState
               icon={<MessageSquareDashed className="h-8 w-8" />}
-              headline="Chưa có cuộc trò chuyện nào"
-              description="Chọn một cuộc trò chuyện từ danh sách hoặc bắt đầu nhắn tin mới."
+              headline="No conversation selected"
+              description="Select a conversation from the list or start a new one."
             />
           </div>
         )}

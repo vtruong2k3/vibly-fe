@@ -23,16 +23,33 @@ import {
   privacySchema,
   type PrivacyValues,
 } from "@/features/settings/schemas/settings.schema";
-import { MOCK_SETTINGS_PRIVACY } from "@/lib/mock-data/settings";
+import { useSettings, useUpdatePrivacySettings } from "@/hooks/use-settings";
+import { useEffect } from "react";
 
 export function PrivacyForm() {
+  const { data: settings } = useSettings();
+  const { mutate: updatePrivacy, isPending } = useUpdatePrivacySettings();
+
   const form = useForm<PrivacyValues>({
     resolver: zodResolver(privacySchema),
-    defaultValues: MOCK_SETTINGS_PRIVACY,
+    defaultValues: { profileVisibility: "friends", showActivityStatus: true, allowTagging: true },
   });
 
+  useEffect(() => {
+    if (settings?.privacy) {
+      form.reset({
+        profileVisibility: settings.privacy.profileVisibility?.toLowerCase() ?? "friends",
+        showActivityStatus: settings.privacy.showOnlineStatus ?? true,
+        allowTagging: true,
+      });
+    }
+  }, [settings, form]);
+
   const onSubmit = (data: PrivacyValues) => {
-    console.log("[PrivacyForm] Submit:", data);
+    updatePrivacy({
+      profileVisibility: (data.profileVisibility?.toUpperCase() as "EVERYONE" | "FRIENDS" | "ONLY_ME") ?? "FRIENDS",
+      showOnlineStatus: data.showActivityStatus,
+    });
   };
 
   return (
@@ -120,8 +137,8 @@ export function PrivacyForm() {
           />
         </div>
 
-        <Button type="submit" className="rounded-xl px-8" disabled={!form.formState.isDirty}>
-          Save privacy settings
+        <Button type="submit" className="rounded-xl px-8" disabled={!form.formState.isDirty || isPending}>
+          {isPending ? "Saving…" : "Save privacy settings"}
         </Button>
       </form>
     </Form>

@@ -4,8 +4,15 @@ import { UserAvatar } from "./user-avatar";
 import type { User } from "@/types";
 import Link from "next/link";
 
+export interface BaseUser {
+  username: string;
+  displayName: string;
+  avatarUrl: string | null;
+  isOnline?: boolean;
+}
+
 interface UserHeaderProps {
-  user: User;
+  user: BaseUser;
   subtitle?: React.ReactNode;
   size?: "sm" | "md" | "lg";
   className?: string;

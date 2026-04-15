@@ -18,8 +18,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserHeader } from "@/components/shared/user-header";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { MOCK_CURRENT_USER } from "@/lib/mock-data/feed";
+import { useAuthStore } from "@/store/auth.store";
+import { User as UserIcon } from "lucide-react";
 
 // ─── Nav Item Types ───────────────────────────────────────────────
 interface SidebarNavItem {
@@ -32,15 +40,13 @@ interface SidebarNavItem {
 const NAV_ITEMS: SidebarNavItem[] = [
   { label: "Home", href: "/feed", icon: Home },
   { label: "Friends", href: "/friends", icon: Users },
-  { label: "Messages", href: "/messages", icon: MessageCircle },
-  { label: "Notifications", href: "/notifications", icon: Bell },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-// ─── Component ───────────────────────────────────────────────────
 export function AppSidebar() {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const user = useAuthStore((s) => s.user);
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
@@ -106,34 +112,62 @@ export function AppSidebar() {
 
       {/* ── User Profile + Theme Toggle ── */}
       <div className="hidden md:block px-3 lg:px-4 py-4 mt-auto">
-        <div className="flex items-center justify-between p-2 lg:p-3 rounded-2xl hover:bg-muted/50 transition-colors mx-[-8px]">
-          <UserHeader
-            user={MOCK_CURRENT_USER}
-            size="md"
-            withLink={false}
-            className="hidden lg:flex"
-          />
-          <div className="hidden lg:flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-            >
-              <Sun className="h-[18px] w-[18px] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[18px] w-[18px] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full text-muted-foreground hover:text-destructive"
-              aria-label="Log out"
-            >
-              <LogOut className="h-[18px] w-[18px]" />
-            </Button>
+        <DropdownMenu>
+          <div className="flex items-center justify-between p-2 lg:p-3 rounded-2xl hover:bg-muted/50 transition-colors mx-[-8px]">
+            {user && (
+              <DropdownMenuTrigger asChild>
+                <div className="cursor-pointer flex-1 min-w-0">
+                  <UserHeader
+                    user={user}
+                    size="md"
+                    withLink={false}
+                    className="hidden lg:flex"
+                  />
+                  {/* For tablets (md-only) where UserHeader is hidden, show just Avatar */}
+                  <div className="hidden md:flex lg:hidden justify-center w-full">
+                     <Avatar className="h-10 w-10 shrink-0">
+                       <AvatarImage src={user.avatarUrl || undefined} alt={user.displayName} />
+                       <AvatarFallback className="bg-primary/10 text-primary font-heading font-bold text-sm">
+                         {user.displayName?.charAt(0).toUpperCase() || "?"}
+                       </AvatarFallback>
+                     </Avatar>
+                  </div>
+                </div>
+              </DropdownMenuTrigger>
+            )}
           </div>
-        </div>
+
+          <DropdownMenuContent align="start" className="w-56 mb-2 rounded-xl">
+            <DropdownMenuItem 
+              onClick={() => {
+                if (user) window.location.href = `/profile/${user.username}`;
+              }}
+              className="cursor-pointer py-2.5 focus:bg-primary focus:text-primary-foreground focus:**:text-primary-foreground"
+            >
+              <UserIcon className="mr-2 h-4 w-4" />
+              <span>Trang cá nhân</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              onClick={() => {
+                window.location.href = `/settings`;
+              }}
+              className="cursor-pointer py-2.5 focus:bg-primary focus:text-primary-foreground focus:**:text-primary-foreground"
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Cài đặt & Quyền riêng tư</span>
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem 
+              onClick={() => useAuthStore.getState().logout()}
+              className="cursor-pointer py-2.5 text-destructive focus:bg-destructive/10 focus:text-destructive focus:**:text-destructive"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Đăng xuất</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </aside>
   );

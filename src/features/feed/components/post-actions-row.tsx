@@ -2,6 +2,7 @@
 
 import { Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   LikeButton,
   CommentButton,
@@ -9,15 +10,13 @@ import {
 import { ShareAction } from "@/features/feed/components/share-action";
 
 // ─── PostActionsRow ────────────────────────────────────────────────
-// Bottom action bar of a PostCard.
-// Receives computed state (isLiked, counts) + handlers from parent.
-
 interface PostActionsRowProps {
   postUrl: string;
   likeCount: number;
   isLiked: boolean;
   commentCount: number;
   shareCount: number;
+  isSaved?: boolean;
   onLike: () => void;
   onComment?: () => void;
   onShare?: () => void;
@@ -30,6 +29,7 @@ export function PostActionsRow({
   isLiked,
   commentCount,
   shareCount,
+  isSaved = false,
   onLike,
   onComment,
   onBookmark,
@@ -45,11 +45,14 @@ export function PostActionsRow({
       <Button
         variant="ghost"
         size="icon"
-        className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 mr-[-4px]"
-        aria-label="Save post"
+        className={cn(
+          "h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 mr-[-4px] transition-colors",
+          isSaved && "text-primary"
+        )}
+        aria-label={isSaved ? "Bỏ lưu bài viết" : "Lưu bài viết"}
         onClick={onBookmark}
       >
-        <Bookmark className="h-[18px] w-[18px]" />
+        <Bookmark className={cn("h-[18px] w-[18px]", isSaved && "fill-current")} />
       </Button>
     </div>
   );

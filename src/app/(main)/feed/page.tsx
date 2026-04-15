@@ -1,19 +1,36 @@
-import type { Metadata } from "next";
-import { MOCK_POSTS } from "@/lib/mock-data/feed";
+"use client";
+
+import { useRef, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { CreatePostCard } from "@/features/feed/components/create-post-card";
 import { PostCard } from "@/features/feed/components/post-card";
 import { FeedRightSidebar } from "@/features/feed/components/feed-right-sidebar";
+import { PostCardSkeleton } from "@/features/feed/components/post-card-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
+import { useFeedQuery } from "@/hooks/use-feed";
+import { Rss } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Home Feed",
-  description: "Your personalized Vibly feed — posts from people you follow.",
-};
-
-// ─── Feed Page — Server Component ────────────────────────────────
-// In production: data will be fetched via React Query on the client
-// For now: mock data passed directly as props to keep SSR boundary clear
+// ─── Feed Client Component — infinite scroll ──────────────────────────────────
 export default function FeedPage() {
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError } =
+    useFeedQuery();
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer for auto-load on scroll
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting && hasNextPage) fetchNextPage(); },
+      { threshold: 0.1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, fetchNextPage]);
+
+  const posts = data?.pages.flatMap((p) => p.posts) ?? [];
+
   return (
     <div className="mx-auto flex justify-center lg:justify-between max-w-[1100px] gap-8 px-0 sm:px-4 py-4 md:py-8 lg:px-8">
       {/* ── Main Feed Column ── */}
@@ -21,16 +38,41 @@ export default function FeedPage() {
         <CreatePostCard />
 
         <section aria-label="Your feed" className="space-y-4 md:space-y-6">
-          {MOCK_POSTS.length > 0 ? (
-            MOCK_POSTS.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))
-          ) : (
-            <EmptyState 
-              icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-rss"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>}
-              headline="Bảng tin của bạn đang trống"
-              description="Hãy đăng bài đầu tiên hoặc kết bạn để làm đầy bảng tin."
+          {isLoading && (
+            <>
+              <PostCardSkeleton />
+              <PostCardSkeleton />
+              <PostCardSkeleton />
+            </>
+          )}
+
+          {isError && (
+            <EmptyState
+              icon={<Rss className="h-8 w-8" />}
+              headline="Could not load feed"
+              description="Something went wrong. Please refresh the page."
             />
+          )}
+
+          {!isLoading && !isError && posts.length === 0 && (
+            <EmptyState
+              icon={<Rss className="h-8 w-8" />}
+              headline="Your feed is empty"
+              description="Start following people or create your first post."
+            />
+          )}
+
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="h-4" />
+
+          {isFetchingNextPage && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
           )}
         </section>
       </div>

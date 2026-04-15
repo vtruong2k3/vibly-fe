@@ -1,16 +1,23 @@
-"use client";
-
-import { UserPlus } from "lucide-react";
+import { useState } from "react";
+import { UserPlus, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import type { User } from "@/types";
+import { useSendFriendRequest } from "@/hooks/use-users";
 
 interface FriendSuggestionCardProps {
   user: User;
 }
 
 export function FriendSuggestionCard({ user }: FriendSuggestionCardProps) {
+  const [sent, setSent] = useState(false);
+  const { mutate: sendRequest, isPending } = useSendFriendRequest();
+
+  const handleAdd = () => {
+    if (sent) return;
+    sendRequest({ addresseeId: user.id }, { onSuccess: () => setSent(true) });
+  };
   return (
     <div className="vibly-card p-4 flex flex-col items-center text-center space-y-3">
       <Link href={`/profile/${user.username}`}>
@@ -36,11 +43,17 @@ export function FriendSuggestionCard({ user }: FriendSuggestionCardProps) {
 
       <Button
         className="w-full rounded-xl gap-2 font-medium"
-        variant="outline"
-        onClick={() => console.log("Requested friend:", user.id)}
+        variant={sent ? "default" : "outline"}
+        onClick={handleAdd}
+        disabled={sent || isPending}
       >
-        <UserPlus className="h-4 w-4" />
-        Add Friend
+        {isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : sent ? (
+          <><Check className="h-4 w-4" /> Requested</>
+        ) : (
+          <><UserPlus className="h-4 w-4" /> Add Friend</>
+        )}
       </Button>
     </div>
   );

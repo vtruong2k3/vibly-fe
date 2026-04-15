@@ -4,12 +4,12 @@ import { PhoneCall, Phone, PhoneOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Button } from "@/components/ui/button";
-import { useCallStore } from "@/features/calls/stores/call.store";
+import { useCallStore } from "@/store/call.store";
 import { MOCK_CALL_ROOM } from "@/lib/mock-data/calls";
 
 export function IncomingCallModal() {
   const router = useRouter();
-  const { isIncomingCallOpen, isReceivingCall, activeCallRoomId, setReceivingCall, setIncomingCallOpen, resetCallState } = useCallStore();
+  const { isIncomingCallOpen, isReceivingCall, activeCallRoomId, setIncomingCall, clearCallState } = useCallStore();
 
   if (!isIncomingCallOpen || !isReceivingCall) return null;
 
@@ -19,16 +19,13 @@ export function IncomingCallModal() {
     || MOCK_CALL_ROOM.participants[0].user;
 
   const handleAccept = () => {
-    // Jump straight into the room
     const roomId = activeCallRoomId || MOCK_CALL_ROOM.id;
-    setReceivingCall(false);
-    setIncomingCallOpen(false);
+    setIncomingCall(false, false);
     router.push(`/call/${roomId}`);
   };
 
   const handleDecline = () => {
-    console.log("[IncomingCall] Declined");
-    resetCallState();
+    clearCallState();
   };
 
   return (

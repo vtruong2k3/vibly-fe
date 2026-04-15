@@ -1,39 +1,54 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+"use client";
+
+import { useParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { CallRoomShell } from "@/features/calls/components/call-room-shell";
-import { MOCK_CALL_ROOM } from "@/lib/mock-data/calls";
-import { MOCK_CURRENT_USER } from "@/lib/mock-data/feed";
+import { useCallSession } from "@/hooks/use-calls";
+import { useMe } from "@/hooks/use-users";
 
-// ─── Params ───────────────────────────────────────────────────────
-type CallPageProps = {
-  params: Promise<{ roomId: string }>;
-};
+// ─── Call Page — Client Component ────────────────────────────────────────────
+// Resolves call session from backend, then hands off to LiveKit shell
+export default function CallPage() {
+  const params = useParams<{ roomId: string }>();
+  const callId = params.roomId;
 
-// ─── Metadata ─────────────────────────────────────────────────────
-export async function generateMetadata({
-  params,
-}: CallPageProps): Promise<Metadata> {
-  const { roomId } = await params;
-  return {
-    title: `Call — ${roomId} | Vibly`,
-    description: "Vibly video call in progress.",
-  };
-}
+  const { data: session, isLoading: sessionLoading } = useCallSession(callId);
+  const { data: me, isLoading: meLoading } = useMe();
 
-// ─── Page ─────────────────────────────────────────────────────────
-// Server Component: resolves room data, delegates UI to client shell.
-export default async function CallPage({ params }: CallPageProps) {
-  const { roomId } = await params;
+  const isLoading = sessionLoading || meLoading;
 
-  // Mock routing: only "room_dev_001" is available in static phase
-  if (roomId !== MOCK_CALL_ROOM.id) {
-    notFound();
+  if (isLoading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Joining call…</p>
+        </div>
+      </div>
+    );
   }
+
+  const room = session
+    ? {
+        id: callId,
+        name: session.name ?? "Call",
+        startedAt: session.startedAt ?? new Date().toISOString(),
+        callType: session.callType ?? "VIDEO",
+        participants: session.participants ?? [],
+      }
+    : {
+        id: callId,
+        name: "Call",
+        startedAt: new Date().toISOString(),
+        callType: "VIDEO" as const,
+        participants: [],
+      };
 
   return (
     <CallRoomShell
-      room={MOCK_CALL_ROOM}
-      localParticipantId={MOCK_CURRENT_USER.id}
+      room={room}
+      callId={callId}
+      localParticipantId={me?.id ?? ""}
     />
   );
 }

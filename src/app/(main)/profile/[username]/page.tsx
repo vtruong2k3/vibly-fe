@@ -1,56 +1,39 @@
-import { notFound } from "next/navigation";
+"use client";
+
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { useParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { ProfileHeader } from "@/features/profile/components/profile-header";
 import { ProfileTabs } from "@/features/profile/components/profile-tabs";
-import {
-  MOCK_PROFILE,
-  MOCK_RIVERS_PROFILE,
-  getMockPostsForUser,
-} from "@/lib/mock-data/profile";
-import { MOCK_CURRENT_USER } from "@/lib/mock-data/feed";
+import { useUserProfile, useMe } from "@/hooks/use-users";
 
-// ─── Params ───────────────────────────────────────────────────────
-type ProfilePageProps = {
-  params: Promise<{ username: string }>;
-};
+// ─── Profile Page — Client Component ─────────────────────────────────────────
+export default function ProfilePage() {
+  const params = useParams<{ username: string }>();
+  const username = params.username;
 
-// ─── Metadata ─────────────────────────────────────────────────────
-export async function generateMetadata({
-  params,
-}: ProfilePageProps): Promise<Metadata> {
-  const { username } = await params;
-  return {
-    title: `@${username} | Vibly`,
-    description: `View the profile of @${username} on Vibly.`,
-  };
-}
+  const { data: me } = useMe();
+  const { data: profile, isLoading, isError } = useUserProfile(username);
 
-// ─── Component ────────────────────────────────────────────────────
-// Server Component representing the profile layout
-export default async function ProfilePage({ params }: ProfilePageProps) {
-  const { username } = await params;
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
-  // Mock routing logic: determine which profile to show
-  let profile;
-  if (username === MOCK_CURRENT_USER.username) {
-    profile = MOCK_PROFILE;
-  } else if (username === MOCK_RIVERS_PROFILE.username) {
-    profile = MOCK_RIVERS_PROFILE;
-  } else {
-    // If unknown user, just return 404
+  if (isError || !profile) {
     notFound();
   }
 
-  const isCurrentUser = username === MOCK_CURRENT_USER.username;
-  const userPosts = getMockPostsForUser(profile.id);
+  const isCurrentUser = me?.username === username;
 
   return (
     <div className="flex-1 pb-16 bg-background">
-      {/* Upper header section */}
       <ProfileHeader profile={profile} isCurrentUser={isCurrentUser} />
-
-      {/* Main content wrapper containing Tabs + 2 Column Sidebar/Feed Grid */}
-      <ProfileTabs profile={profile} posts={userPosts} isCurrentUser={isCurrentUser} />
+      <ProfileTabs profile={profile} posts={profile.posts ?? []} isCurrentUser={isCurrentUser} />
     </div>
   );
 }

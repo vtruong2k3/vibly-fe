@@ -16,16 +16,37 @@ import {
   notificationsSchema,
   type NotificationsValues,
 } from "@/features/settings/schemas/settings.schema";
-import { MOCK_SETTINGS_NOTIFICATIONS } from "@/lib/mock-data/settings";
+import { useSettings, useUpdateNotificationSettings } from "@/hooks/use-settings";
+import { useEffect } from "react";
 
 export function NotificationForm() {
+  const { data: settings } = useSettings();
+  const { mutate: updateNotifications, isPending } = useUpdateNotificationSettings();
+
   const form = useForm<NotificationsValues>({
     resolver: zodResolver(notificationsSchema),
-    defaultValues: MOCK_SETTINGS_NOTIFICATIONS,
+    defaultValues: { friendRequests: true, mentions: true, directMessages: true, emailNotifications: false, marketingEmails: false },
   });
 
+  useEffect(() => {
+    if (settings?.notifications) {
+      const n = settings.notifications;
+      form.reset({
+        friendRequests: n.friendRequestEnabled ?? true,
+        mentions: n.likeEnabled ?? true,
+        directMessages: n.messageEnabled ?? true,
+        emailNotifications: n.emailNotificationsEnabled ?? false,
+        marketingEmails: false,
+      });
+    }
+  }, [settings, form]);
+
   const onSubmit = (data: NotificationsValues) => {
-    console.log("[NotificationForm] Submit:", data);
+    updateNotifications({
+      friendRequestEnabled: data.friendRequests,
+      messageEnabled: data.directMessages,
+      emailNotificationsEnabled: data.emailNotifications,
+    });
   };
 
   return (
@@ -124,8 +145,8 @@ export function NotificationForm() {
           />
         </div>
 
-        <Button type="submit" className="rounded-xl px-8" disabled={!form.formState.isDirty}>
-          Update notifications
+        <Button type="submit" className="rounded-xl px-8" disabled={!form.formState.isDirty || isPending}>
+          {isPending ? "Saving…" : "Update notifications"}
         </Button>
       </form>
     </Form>

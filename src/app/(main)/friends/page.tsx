@@ -1,70 +1,120 @@
-import type { Metadata } from "next";
+"use client";
+
+import { Loader2, Users, UserCheck } from "lucide-react";
 import { FriendRequestCard } from "@/features/friendships/components/friend-request-card";
-import { FriendSuggestionCard } from "@/features/friendships/components/friend-suggestion-card";
-import { FriendsListSection } from "@/features/friendships/components/friends-list-section";
-import {
-  MOCK_FRIEND_REQUESTS,
-  MOCK_SUGGESTIONS,
-  MOCK_FRIENDS,
-} from "@/lib/mock-data/friends";
+import { EmptyState } from "@/components/shared/empty-state";
+import { useFriendRequests, useFriends } from "@/hooks/use-friendships";
+import type { FriendRequest } from "@/types";
 
-export const metadata: Metadata = {
-  title: "Friends | Vibly",
-  description: "Manage your friends and connections on Vibly.",
-};
-
+// ─── Friends Page ─────────────────────────────────────────────────────────────
 export default function FriendsPage() {
+  const { data: requestsRaw, isLoading: requestsLoading } = useFriendRequests();
+  const { data: friendsRaw, isLoading: friendsLoading } = useFriends();
+
+  // Backend returns a flat array for both endpoints
+  const requests: FriendRequest[] = Array.isArray(requestsRaw)
+    ? requestsRaw.map((r: {
+        id: string;
+        requesterId: string;
+        createdAt: string;
+        requester: {
+          id: string;
+          username: string;
+          profile?: { displayName?: string; avatarMediaId?: string | null };
+        };
+      }) => ({
+        id: r.id,
+        receiverId: r.requesterId,
+        status: "pending" as const,
+        createdAt: r.createdAt,
+        sender: {
+          id: r.requester.id,
+          username: r.requester.username,
+          displayName: r.requester.profile?.displayName ?? r.requester.username,
+          avatarUrl: r.requester.profile?.avatarMediaId ?? null,
+          bio: null,
+          isOnline: false,
+          createdAt: r.createdAt,
+        },
+      }))
+    : [];
+
+  const friends = Array.isArray(friendsRaw) ? friendsRaw : [];
+  const isLoading = requestsLoading || friendsLoading;
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col lg:flex-row gap-8">
-        
-        {/* Main Column: Friend Requests & Current Friends */}
-        <div className="flex-1 space-y-8">
-          
+      <h1 className="text-2xl font-bold font-heading text-foreground mb-8">Bạn bè</h1>
+
+      {isLoading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="space-y-10">
+
           {/* Friend Requests Section */}
-          {MOCK_FRIEND_REQUESTS.length > 0 && (
-            <section>
-              <h2 className="text-xl font-heading font-bold text-foreground mb-4">
-                Friend Requests
-                <span className="ml-2 text-sm font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
-                  {MOCK_FRIEND_REQUESTS.length}
+          <section>
+            <h2 className="text-lg font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
+              Lời mời kết bạn
+              {requests.length > 0 && (
+                <span className="text-sm font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
+                  {requests.length}
                 </span>
-              </h2>
+              )}
+            </h2>
+            {requests.length === 0 ? (
+              <EmptyState
+                icon={<Users className="h-8 w-8" />}
+                headline="Chưa có lời mời nào"
+                description="Khi ai đó gửi lời mời kết bạn cho bạn, họ sẽ hiện ở đây."
+              />
+            ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {MOCK_FRIEND_REQUESTS.map((req) => (
+                {requests.map((req) => (
                   <FriendRequestCard key={req.id} request={req} />
                 ))}
               </div>
-            </section>
-          )}
+            )}
+          </section>
 
           {/* Current Friends Section */}
           <section>
-            <h2 className="text-xl font-heading font-bold text-foreground mb-4">
-              All Friends
-              <span className="ml-2 text-sm font-medium text-muted-foreground">
-                {MOCK_FRIENDS.length}
-              </span>
+            <h2 className="text-lg font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
+              Bạn bè
+              <span className="text-sm font-medium text-muted-foreground">({friends.length})</span>
             </h2>
-            <FriendsListSection friends={MOCK_FRIENDS} />
+            {friends.length === 0 ? (
+              <EmptyState
+                icon={<UserCheck className="h-8 w-8" />}
+                headline="Chưa có bạn bè"
+                description="Hãy tìm kiếm và kết bạn với những người bạn biết!"
+              />
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {(friends as Array<{
+                  user: { id: string; username: string; profile?: { displayName?: string; avatarMediaId?: string | null } };
+                }>).map((f) => (
+                  <a
+                    key={f.user.id}
+                    href={`/profile/${f.user.username}`}
+                    className="vibly-card p-4 flex flex-col items-center text-center gap-2 hover:shadow-md transition-shadow cursor-pointer group"
+                  >
+                    <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center text-2xl font-bold text-secondary-foreground group-hover:ring-2 group-hover:ring-primary transition-all">
+                      {(f.user.profile?.displayName ?? f.user.username)[0].toUpperCase()}
+                    </div>
+                    <p className="text-sm font-semibold text-foreground truncate w-full">
+                      {f.user.profile?.displayName ?? f.user.username}
+                    </p>
+                    <p className="text-xs text-muted-foreground">@{f.user.username}</p>
+                  </a>
+                ))}
+              </div>
+            )}
           </section>
-        </div>
 
-        {/* Sidebar Column: Suggestions */}
-        <div className="lg:w-80 space-y-8">
-          <section>
-            <h2 className="text-lg font-heading font-bold text-foreground mb-4">
-              People You May Know
-            </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
-              {MOCK_SUGGESTIONS.map((user) => (
-                <FriendSuggestionCard key={user.id} user={user} />
-              ))}
-            </div>
-          </section>
         </div>
-        
-      </div>
+      )}
     </div>
   );
 }

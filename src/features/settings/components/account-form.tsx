@@ -17,16 +17,31 @@ import {
   accountSchema,
   type AccountValues,
 } from "@/features/settings/schemas/settings.schema";
-import { MOCK_SETTINGS_ACCOUNT } from "@/lib/mock-data/settings";
+import { useMe, useUpdateProfile } from "@/hooks/use-users";
+import { useEffect } from "react";
 
 export function AccountForm() {
+  const { data: me } = useMe();
+  const { mutate: updateProfile, isPending } = useUpdateProfile();
+
   const form = useForm<AccountValues>({
     resolver: zodResolver(accountSchema),
-    defaultValues: MOCK_SETTINGS_ACCOUNT,
+    defaultValues: { username: "", displayName: "", email: "" },
   });
 
+  // Populate form when user data loads
+  useEffect(() => {
+    if (me) {
+      form.reset({
+        username: me.username ?? "",
+        displayName: me.displayName ?? "",
+        email: me.email ?? "",
+      });
+    }
+  }, [me, form]);
+
   const onSubmit = (data: AccountValues) => {
-    console.log("[AccountForm] Submit:", data);
+    updateProfile({ displayName: data.displayName });
   };
 
   return (
@@ -93,8 +108,8 @@ export function AccountForm() {
           />
         </div>
 
-        <Button type="submit" className="rounded-xl px-8" disabled={!form.formState.isDirty}>
-          Save changes
+        <Button type="submit" className="rounded-xl px-8" disabled={!form.formState.isDirty || isPending}>
+          {isPending ? "Saving…" : "Save changes"}
         </Button>
       </form>
     </Form>
