@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { friendshipsService, type SendFriendRequestDto } from "@/lib/services/friendships.service";
 import { QUERY_KEYS } from "@/lib/api/constants";
+import { usePresenceStore } from "@/store/presence.store";
 
 // ─── useFriends ───────────────────────────────────────────────────────────────
 export function useFriends() {
@@ -11,7 +12,22 @@ export function useFriends() {
     queryKey: QUERY_KEYS.friends,
     queryFn: () => friendshipsService.listFriends({}).then((r) => {
       const raw = r?.data ?? r;
-      return Array.isArray(raw) ? raw : [];
+      const friendsArray = Array.isArray(raw) ? raw : [];
+      
+      // Seed presence store with friends' presence data
+      const presenceUpdates: Record<string, any> = {};
+      friendsArray.forEach((f: any) => {
+        if (f.user?.presence) {
+          presenceUpdates[f.user.id] = f.user.presence;
+        } else if (f.user && typeof f.user.isOnline !== 'undefined') {
+          presenceUpdates[f.user.id] = { isOnline: f.user.isOnline, lastSeenAt: f.user.lastSeenAt ?? null };
+        }
+      });
+      if (Object.keys(presenceUpdates).length > 0) {
+        usePresenceStore.getState().bulkUpdate(presenceUpdates);
+      }
+
+      return friendsArray;
     }),
     staleTime: 60_000,
   });

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { tokenStorage } from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
+import { usePresenceStore } from "@/store/presence.store";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface IncomingMessage {
@@ -22,7 +23,7 @@ export interface IncomingMessage {
 interface SocketContextValue {
   socket: Socket | null;
   isConnected: boolean;
-  onlineUserIds: Set<string>;
+  onlineUserIds: Set<string>; // kept for backwards compat
   joinConversation: (conversationId: string) => void;
   leaveConversation: (conversationId: string) => void;
 }
@@ -76,15 +77,19 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     socket.on("connect", () => setIsConnected(true));
     socket.on("disconnect", () => setIsConnected(false));
 
-    // Presence — online/offline status from friends
-    socket.on("user_presence_changed", ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
-      setOnlineUserIds((prev) => {
-        const next = new Set(prev);
-        if (isOnline) next.add(userId);
-        else next.delete(userId);
-        return next;
-      });
-    });
+    // Presence — write to global presence store (and keep onlineUserIds set for compat)
+    socket.on(
+      "user_presence_changed",
+      ({ userId, isOnline, lastSeenAt }: { userId: string; isOnline: boolean; lastSeenAt: string | null }) => {
+        usePresenceStore.getState().updatePresence(userId, { isOnline, lastSeenAt: isOnline ? null : lastSeenAt });
+        setOnlineUserIds((prev) => {
+          const next = new Set(prev);
+          if (isOnline) next.add(userId);
+          else next.delete(userId);
+          return next;
+        });
+      },
+    );
 
     return () => {
       socket.disconnect();

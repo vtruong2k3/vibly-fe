@@ -13,6 +13,7 @@ import { useCallStore } from "@/store/call.store";
 import { IncomingCallModal } from "@/features/chat/components/incoming-call-modal";
 import { GlobalCallOverlay } from "@/features/calls/components/global-call-overlay";
 import { useNotificationStore } from "@/store/notifications.store";
+import { usePresenceStore, type UserPresence } from "@/store/presence.store";
 
 export function GlobalChatProvider({ children }: { children: React.ReactNode }) {
   const { socket, joinConversation } = useSocket();
@@ -25,16 +26,34 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
   // Lấy sẵn danh sách hộp thoại của user
   const { data: conversationsData } = useConversationsQuery();
 
-  // Tự động JOIN vào tất cả các phòng Chat để bắt sự kiện Background
+  // Tự động JOIN vào tất cả các phòng Chat và Sync Presence
   useEffect(() => {
     if (!socket || !conversationsData) return;
     const conversationsArray = Array.isArray(conversationsData)
       ? conversationsData
       : (conversationsData as any)?.data ?? (conversationsData as any)?.conversations ?? [];
       
+    // Seed presence store with the data from conversations API
+    const presenceUpdates: Record<string, UserPresence> = {};
+
     conversationsArray.forEach((conv: any) => {
       joinConversation(conv.id);
+      
+      // Update global presence state
+      if (conv.members) {
+        conv.members.forEach((m: any) => {
+          if (m.user && m.user.presence) {
+            presenceUpdates[m.user.id] = m.user.presence;
+          } else if (m.user && typeof m.user.isOnline !== 'undefined') {
+            presenceUpdates[m.user.id] = { isOnline: m.user.isOnline, lastSeenAt: m.user.lastSeenAt ?? null };
+          }
+        });
+      }
     });
+
+    if (Object.keys(presenceUpdates).length > 0) {
+      usePresenceStore.getState().bulkUpdate(presenceUpdates);
+    }
   }, [socket, conversationsData, joinConversation]);
 
   useEffect(() => {

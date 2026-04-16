@@ -1,14 +1,20 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "./user-avatar";
-import type { User } from "@/types";
 import Link from "next/link";
+import { usePresenceStore } from "@/store/presence.store";
+import { formatDistanceToNow } from "date-fns";
+import { vi } from "date-fns/locale";
 
 export interface BaseUser {
+  id?: string;
   username: string;
   displayName: string;
   avatarUrl: string | null;
   isOnline?: boolean;
+  lastSeenAt?: string | null;
 }
 
 interface UserHeaderProps {
@@ -18,7 +24,56 @@ interface UserHeaderProps {
   className?: string;
   avatarClassName?: string;
   withLink?: boolean;
-  showOnlineBadge?: boolean; // Like the generic "Active" badge, rather than the dot
+  showOnlineBadge?: boolean;
+}
+
+// ─── PresenceLabel ─────────────────────────────────────────────────
+// Reads from global presence store for real-time updates.
+// Falls back to prop values if user.id is not in the store yet.
+function PresenceLabel({
+  userId,
+  fallbackIsOnline,
+  fallbackLastSeenAt,
+}: {
+  userId?: string;
+  fallbackIsOnline?: boolean;
+  fallbackLastSeenAt?: string | null;
+}) {
+  // Subscribe to presence store for this specific user id
+  const presence = usePresenceStore((s) => (userId ? s.users[userId] : undefined));
+
+  const isOnline = presence?.isOnline ?? fallbackIsOnline ?? false;
+  const lastSeenAt = presence?.lastSeenAt ?? fallbackLastSeenAt ?? null;
+
+  if (isOnline) {
+    return (
+      <span className="flex items-center gap-1.5 text-[13px] font-medium text-emerald-500">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+        </span>
+        Active now
+      </span>
+    );
+  }
+
+  if (lastSeenAt) {
+    const ago = formatDistanceToNow(new Date(lastSeenAt), {
+      addSuffix: false,
+      locale: vi,
+    });
+    return (
+      <span className="text-[13px] text-muted-foreground font-medium truncate pt-0.5">
+        Hoạt động {ago} trước
+      </span>
+    );
+  }
+
+  return (
+    <span className="text-[13px] text-muted-foreground font-medium truncate pt-0.5">
+      Offline
+    </span>
+  );
 }
 
 export function UserHeader({
@@ -53,10 +108,17 @@ export function UserHeader({
           </Badge>
         )}
       </div>
-      {(subtitle || user.username) && (
+      {subtitle ? (
         <span className="text-[13px] text-muted-foreground font-medium truncate pt-0.5">
-          {subtitle || `@${user.username}`}
+          {subtitle}
         </span>
+      ) : (
+        // Show real-time presence label (Active now / X phút trước / Offline)
+        <PresenceLabel
+          userId={user.id}
+          fallbackIsOnline={user.isOnline}
+          fallbackLastSeenAt={user.lastSeenAt}
+        />
       )}
     </div>
   );
@@ -70,7 +132,7 @@ export function UserHeader({
       ) : (
         <UserAvatar user={user} size={size} className={cn("shrink-0", avatarClassName)} />
       )}
-      
+
       {withLink ? (
         <Link href={`/profile/${user.username}`} className="min-w-0">
           {Content}
