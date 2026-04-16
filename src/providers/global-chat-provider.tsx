@@ -13,6 +13,7 @@ import { useCallStore } from "@/store/call.store";
 import { useWebRTC } from "@/hooks/use-webrtc";
 import { IncomingCallModal } from "@/features/chat/components/incoming-call-modal";
 import { CallWindowWidget } from "@/features/chat/components/call-window-widget";
+import { useNotificationStore } from "@/store/notifications.store";
 
 export function GlobalChatProvider({ children }: { children: React.ReactNode }) {
   const { socket, joinConversation } = useSocket();
@@ -142,12 +143,77 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
     socket.on("call:rejected", onCallEndedOrCanceled);
     socket.on("call:ended", onCallEndedOrCanceled);
 
+    // ── POST REAL-TIME EVENTS ──────────────────────────────────────────────────
+    // Reaction count changed: update both feed and profile post caches in-place
+    const onPostReaction = (data: { postId: string; reactionCount: number }) => {
+      const patchPost = (old: any): any => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            data: (page.data ?? []).map((p: any) =>
+              p.id === data.postId ? { ...p, reactionCount: data.reactionCount } : p
+            ),
+          })),
+        };
+      };
+      qc.setQueriesData({ queryKey: QUERY_KEYS.feed }, patchPost);
+      // Also invalidate so any profile page gets fresh data
+      qc.invalidateQueries({ queryKey: ["user-posts"] });
+    };
+
+    // New comment: increment commentCount on matching posts + invalidate comment list
+    const onPostNewComment = (data: { postId: string; comment: any }) => {
+      const patchCommentCount = (old: any): any => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            data: (page.data ?? []).map((p: any) =>
+              p.id === data.postId ? { ...p, commentCount: (p.commentCount ?? 0) + 1 } : p
+            ),
+          })),
+        };
+      };
+      qc.setQueriesData({ queryKey: QUERY_KEYS.feed }, patchCommentCount);
+      // Append new comment into the comment list cache if already loaded
+      qc.setQueryData(["comments", data.postId], (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: [
+            { ...old.pages[0], data: [...(old.pages[0]?.data ?? []), data.comment] },
+            ...old.pages.slice(1),
+          ],
+        };
+      });
+      qc.invalidateQueries({ queryKey: ["user-posts"] });
+    };
+
+    // ── NOTIFICATION BELL ─────────────────────────────────────────────────────
+    // Handle server-pushed notifications to update Bell badge without polling
+    const pushNotification = useNotificationStore.getState().push;
+    const onNewNotification = (notification: any) => {
+      pushNotification(notification);
+      // Also refresh notifications list panel
+      qc.invalidateQueries({ queryKey: QUERY_KEYS.notifications });
+    };
+
+    socket.on("post:reaction_updated", onPostReaction);
+    socket.on("post:new_comment", onPostNewComment);
+    socket.on("new_notification", onNewNotification);
+
     return () => { 
       socket.off("new_message", onNewMessage); 
       socket.off("call:incoming", onCallIncoming);
       socket.off("call:canceled", onCallEndedOrCanceled);
       socket.off("call:rejected", onCallEndedOrCanceled);
       socket.off("call:ended", onCallEndedOrCanceled);
+      socket.off("post:reaction_updated", onPostReaction);
+      socket.off("post:new_comment", onPostNewComment);
+      socket.off("new_notification", onNewNotification);
     };
   }, [socket, pathname, qc, openConversation, openConversationIds, me]);
 

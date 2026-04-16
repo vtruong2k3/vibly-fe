@@ -4,6 +4,9 @@ import { create } from "zustand";
 export type NotificationType =
   | "friend_request_received"
   | "friend_request_accepted"
+  | "POST_REACTION"
+  | "COMMENT_POST"
+  | "LIKE_POST"
   | "system";
 
 export interface AppNotification {

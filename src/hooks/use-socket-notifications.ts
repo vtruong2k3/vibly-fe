@@ -56,6 +56,19 @@ export function useSocketNotifications() {
           break;
         }
 
+        case "POST_REACTION":
+        case "LIKE_POST": {
+          const actor = (payload as any).actor?.profile?.displayName || (payload as any).actor?.username || "Ai đó";
+          toast(`${actor} đã thả ❤️ vào bài viết của bạn`);
+          break;
+        }
+
+        case "COMMENT_POST": {
+          const actor = (payload as any).actor?.profile?.displayName || (payload as any).actor?.username || "Ai đó";
+          toast(`${actor} đã bình luận vào bài viết của bạn 💬`);
+          break;
+        }
+
         default:
           break;
       }
