@@ -9,9 +9,5 @@ export const metadata: Metadata = {
 // ─── Messages Page — Server Component ────────────────────────────────────────
 // MessagesView is now a self-contained Client Component that fetches its own data
 export default function MessagesPage() {
-  return (
-    <div className="h-full">
-      <MessagesView />
-    </div>
-  );
+  return <MessagesView />;
 }

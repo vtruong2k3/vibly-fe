@@ -21,31 +21,6 @@ export function useConversationMessages(conversationId: string | null) {
   const qc = useQueryClient();
   const { socket } = useSocket();
 
-  // Listen for incoming real-time messages and inject them into cache
-  useEffect(() => {
-    if (!socket || !conversationId) return;
-
-    const handler = (msg: IncomingMessage) => {
-      if (msg.conversationId !== conversationId) return;
-      qc.setQueryData(
-        QUERY_KEYS.messages(conversationId),
-        (old: { pages: Array<{ data: IncomingMessage[] }> } | undefined) => {
-          if (!old) return old;
-          const firstPage = old.pages[0];
-          return {
-            ...old,
-            pages: [{ ...firstPage, data: [...firstPage.data, msg] }, ...old.pages.slice(1)],
-          };
-        }
-      );
-      // Also refresh conversation list to update unread & last message preview
-      qc.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
-    };
-
-    socket.on("new_message", handler);
-    return () => { socket.off("new_message", handler); };
-  }, [socket, conversationId, qc]);
-
   return useInfiniteQuery({
     queryKey: QUERY_KEYS.messages(conversationId ?? ""),
     queryFn: ({ pageParam }: { pageParam?: string }) =>
@@ -70,12 +45,12 @@ export function useCreateConversation() {
 // ─── useSendMessage ───────────────────────────────────────────────────────────
 export function useSendMessage(conversationId: string) {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: (dto: SendMessageDto) => chatService.sendMessage(conversationId, dto),
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: QUERY_KEYS.messages(conversationId) });
       qc.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
     },
-    onError: () => toast.error("Không thể gửi tin nhắn."),
   });
 }

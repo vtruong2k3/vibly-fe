@@ -26,7 +26,7 @@ export function useLiveKitToken(callId: string | null) {
 // ─── useCallSession — watch call status ──────────────────────────────────────
 export function useCallSession(callId: string | null) {
   return useQuery({
-    queryKey: QUERY_KEYS.me, // temporary — no specific key yet
+    queryKey: ["call-session", callId], // properly isolated key
     queryFn: () => callsService.getSession(callId!),
     enabled: !!callId,
     refetchInterval: 5_000,

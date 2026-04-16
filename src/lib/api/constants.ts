@@ -1,6 +1,5 @@
 // ─── API Base ────────────────────────────────────────────────────────────────
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+export const API_BASE_URL = "/api/v1";
 
 // ─── API Endpoints ────────────────────────────────────────────────────────────
 // Single source of truth for ALL backend routes.
@@ -124,6 +123,7 @@ export const ENDPOINTS = {
     reject: (id: string) => `/calls/${id}/reject`,
     end: (id: string) => `/calls/${id}/end`,
     session: (id: string) => `/calls/${id}`,
+    iceServers: "/calls/config/ice-servers",
   },
 
   // ── Moderation ────────────────────────────────────────────────────────────

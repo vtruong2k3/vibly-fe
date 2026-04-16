@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -9,6 +10,7 @@ import {
   type CreateMessageDto,
 } from "@/lib/services/conversations.service";
 import { QUERY_KEYS } from "@/lib/api/constants";
+import { useSocket } from "@/providers/socket-provider";
 
 const DEFAULT_LIMIT = 30;
 
@@ -42,6 +44,10 @@ export function useMarkConversationRead() {
 
 // ─── useMessagesQuery — infinite scroll backwards ────────────────────────────
 export function useMessagesQuery(conversationId: string) {
+  const qc = useQueryClient();
+  const { socket } = useSocket();
+
+
   return useInfiniteQuery({
     queryKey: QUERY_KEYS.messages(conversationId),
     queryFn: ({ pageParam }) =>
@@ -55,13 +61,15 @@ export function useMessagesQuery(conversationId: string) {
   });
 }
 
-// ─── useSendMessage ───────────────────────────────────────────────────────────
 export function useSendMessage(conversationId: string) {
   const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: (dto: CreateMessageDto) => messagesService.send(conversationId, dto),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.messages(conversationId) }),
-    onError: () => toast.error("Message failed to send."),
+    onSettled: () => {
+      // Luôn đồng bộ lại với Backend
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.messages(conversationId) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
+    },
   });
 }

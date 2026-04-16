@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, CheckCircle2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { isAxiosError } from "axios";
 
@@ -24,6 +23,46 @@ import {
   type RegisterFormValues,
 } from "@/features/auth/schemas/register.schema";
 import { useAuthStore } from "@/store/auth.store";
+import { authService } from "@/lib/services/auth.service";
+
+// ─── Resend Email sub-component ──────────────────────────────────
+function ResendButton({ email }: { email: string }) {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleResend = async () => {
+    setSending(true);
+    try {
+      await authService.resendVerifyEmail({ email });
+      setSent(true);
+      toast.success("Verification email resent! Check your inbox.");
+    } catch {
+      toast.error("Could not send email. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <p className="text-sm text-muted-foreground">
+      Didn&apos;t receive it?{" "}
+      <button
+        type="button"
+        onClick={handleResend}
+        disabled={sending || sent}
+        className="inline-flex items-center gap-1 text-primary font-medium hover:underline underline-offset-4 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {sending ? (
+          <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Sending...</>
+        ) : sent ? (
+          "Email sent ✓"
+        ) : (
+          <><Send className="h-3.5 w-3.5" /> Resend email</>
+        )}
+      </button>
+    </p>
+  );
+}
 
 // ─── Password strength helper ─────────────────────────────────────
 function getPasswordStrength(password: string): {
@@ -54,7 +93,6 @@ export function RegisterForm() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const router = useRouter();
   const register = useAuthStore((s) => s.register);
 
   const form = useForm<RegisterFormValues>({
@@ -98,58 +136,54 @@ export function RegisterForm() {
 
 
   if (isSuccess) {
-    const handleDevLogin = async () => {
-      setIsLoading(true);
-      try {
-        await login({ email: form.getValues("email"), password: form.getValues("password") });
-        router.push("/feed");
-      } catch {
-        toast.error("Không thể đăng nhập tự động. Hãy vào trang đăng nhập.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const registeredEmail = form.getValues("email");
 
     return (
-      <div className="space-y-4 text-center py-8">
-        <div className="flex justify-center">
-          <CheckCircle2 className="h-16 w-16 text-emerald-500" />
-        </div>
-        <h2 className="text-2xl font-bold font-heading text-foreground">
-          Kiểm tra hộp thư!
-        </h2>
-        <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-          Chúng tôi đã gửi email xác minh đến{" "}
-          <span className="font-medium text-foreground">
-            {form.getValues("email")}
-          </span>
-          . Nhấn vào link để kích hoạt tài khoản.
-        </p>
-
-        {/* DEV shortcut — bypass email verify in development */}
-        {process.env.NODE_ENV !== "production" && (
-          <div className="mt-4 pt-4 border-t border-border/50">
-            <p className="text-xs text-muted-foreground mb-2">🛠️ Dev mode — bỏ qua xác minh email</p>
-            <Button
-              onClick={handleDevLogin}
-              disabled={isLoading}
-              className="w-full rounded-xl h-10 font-semibold"
-              variant="outline"
-            >
-              {isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Đang vào...</>
-              ) : (
-                "Vào feed luôn →"
-              )}
-            </Button>
+      <div className="flex flex-col items-center text-center py-4 space-y-6">
+        {/* Animated icon */}
+        <div className="relative flex items-center justify-center">
+          <div className="absolute h-24 w-24 rounded-full bg-emerald-500/10 animate-ping" />
+          <div className="relative flex items-center justify-center h-20 w-20 rounded-full bg-emerald-500/15">
+            <CheckCircle2 className="h-10 w-10 text-emerald-500" />
           </div>
-        )}
+        </div>
+
+        {/* Copy */}
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold font-heading text-foreground">
+            Check your inbox!
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
+            We sent a verification link to{" "}
+            <span className="font-semibold text-foreground">{registeredEmail}</span>.
+            Click the link in the email to activate your account.
+          </p>
+        </div>
+
+        {/* Steps guide */}
+        <div className="w-full rounded-xl border border-border bg-muted/30 p-4 text-left space-y-3">
+          {[
+            { step: "1", text: "Open your email app" },
+            { step: "2", text: 'Find email from "Vibly"' },
+            { step: "3", text: 'Click "Verify my email" button' },
+          ].map(({ step, text }) => (
+            <div key={step} className="flex items-center gap-3">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {step}
+              </span>
+              <span className="text-sm text-muted-foreground">{text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Resend */}
+        <ResendButton email={registeredEmail} />
 
         <Link
           href="/login"
-          className="inline-block text-sm text-primary font-medium hover:underline underline-offset-4 mt-2"
+          className="inline-block text-sm text-primary font-medium hover:underline underline-offset-4"
         >
-          Quay lại đăng nhập
+          Back to login
         </Link>
       </div>
     );

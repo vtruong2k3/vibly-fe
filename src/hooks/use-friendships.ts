@@ -128,7 +128,8 @@ export function useFriendshipStatus(targetUserId: string | undefined) {
   });
 
   return {
-    status: query.data?.status ?? "none",
+    // While loading, use undefined to distinguish "unknown" from "none"
+    status: query.isLoading ? undefined : (query.data?.status ?? "none"),
     requestId: query.data?.requestId ?? null,
     isLoading: query.isLoading,
     refetch: query.refetch,

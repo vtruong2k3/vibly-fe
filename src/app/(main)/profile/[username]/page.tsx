@@ -32,8 +32,8 @@ export default function ProfilePage() {
 
   return (
     <div className="flex-1 pb-16 bg-background">
-      <ProfileHeader profile={profile} isCurrentUser={isCurrentUser} />
-      <ProfileTabs profile={profile} posts={profile.posts ?? []} isCurrentUser={isCurrentUser} />
+      <ProfileHeader profile={profile as any} isCurrentUser={isCurrentUser} />
+      <ProfileTabs profile={profile as any} posts={(profile as any).posts ?? []} isCurrentUser={isCurrentUser} />
     </div>
   );
 }

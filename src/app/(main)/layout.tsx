@@ -6,6 +6,7 @@ import { SocketProvider } from "@/providers/socket-provider";
 import { ChatBubbleDock } from "@/features/chat/components/chat-bubble-dock";
 import { AppHeader } from "@/components/layout/app-header";
 import { NotificationListener } from "@/components/shared/notification-listener";
+import { GlobalChatProvider } from "@/providers/global-chat-provider";
 
 // Main layout: persistent sidebar + content area + real-time socket + chat bubbles
 export default function MainLayout({
@@ -16,19 +17,21 @@ export default function MainLayout({
   return (
     <AuthGuard>
       <SocketProvider>
-        <div className="flex flex-col-reverse md:flex-row h-screen overflow-hidden bg-background">
-          <AppSidebar />
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-            <AppHeader />
-            <main className="flex-1 overflow-y-auto w-full">
-              {children}
-            </main>
+        <GlobalChatProvider>
+          <div className="flex flex-col-reverse md:flex-row h-screen overflow-hidden bg-background">
+            <AppSidebar />
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+              <AppHeader />
+              <main className="flex-1 flex flex-col min-h-0 overflow-y-auto w-full relative">
+                {children}
+              </main>
+            </div>
           </div>
-        </div>
-        {/* Floating chat bubbles — persists across all pages */}
-        <ChatBubbleDock />
-        {/* Real-time notification listener */}
-        <NotificationListener />
+          {/* Floating chat bubbles — persists across all pages */}
+          <ChatBubbleDock />
+          {/* Real-time notification listener */}
+          <NotificationListener />
+        </GlobalChatProvider>
       </SocketProvider>
     </AuthGuard>
   );

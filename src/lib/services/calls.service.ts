@@ -13,20 +13,23 @@ export interface StartCallDto {
 // ─── Calls Service ────────────────────────────────────────────────────────────
 export const callsService = {
   start: (dto: StartCallDto) =>
-    apiClient.post(ENDPOINTS.calls.start, dto).then((r) => r.data),
+    apiClient.post(ENDPOINTS.calls.start, dto).then((r) => r.data.data),
 
   getToken: (id: string) =>
-    apiClient.post(ENDPOINTS.calls.token(id)).then((r) => r.data),
+    apiClient.post(ENDPOINTS.calls.token(id)).then((r) => r.data.data),
 
   accept: (id: string) =>
-    apiClient.post(ENDPOINTS.calls.accept(id)).then((r) => r.data),
+    apiClient.post(ENDPOINTS.calls.accept(id)).then((r) => r.data.data),
 
   reject: (id: string) =>
-    apiClient.post(ENDPOINTS.calls.reject(id)).then((r) => r.data),
+    apiClient.post(ENDPOINTS.calls.reject(id)).then((r) => r.data.data),
 
   end: (id: string) =>
-    apiClient.post(ENDPOINTS.calls.end(id)).then((r) => r.data),
+    apiClient.post(ENDPOINTS.calls.end(id)).then((r) => r.data.data),
 
   getSession: (id: string) =>
-    apiClient.get(ENDPOINTS.calls.session(id)).then((r) => r.data),
+    apiClient.get(ENDPOINTS.calls.session(id)).then((r) => r.data.data),
+
+  getIceServers: () =>
+    apiClient.get(ENDPOINTS.calls.iceServers).then((r) => r.data.data),
 };

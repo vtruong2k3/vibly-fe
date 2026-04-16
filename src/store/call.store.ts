@@ -1,50 +1,106 @@
 import { create } from "zustand";
 
+export interface WebRTCCallSession {
+  callSessionId: string;
+  roomName: string;
+  callType: "AUDIO" | "VIDEO";
+  callerUserId: string;
+  callerUsername: string;
+  calerDisplayName?: string;
+  callerAvatarUrl?: string; // or MediaId
+  otherUserId: string; // The ID of the peer to relay signaling messages to
+}
+
 interface CallState {
-  isReceivingCall: boolean;
-  isIncomingCallOpen: boolean;
+  // Call status
+  incomingCall: WebRTCCallSession | null;
+  activeCall: WebRTCCallSession | null;
+  
+  // UI States
   isCallMinimized: boolean;
   isFloatingDockVisible: boolean;
-  activeCallRoomId: string | null;
 
-  setIncomingCall: (isOpen: boolean, receiving: boolean, roomId?: string) => void;
+  // Media Settings
+  isMuted: boolean;
+  isVideoOff: boolean;
+
+  // Media Streams (Non-serializable but kept in Zustand for global access)
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
+
+  // Actions
+  setIncomingCall: (call: WebRTCCallSession | null) => void;
+  setActiveCall: (call: WebRTCCallSession | null) => void;
   minimizeCall: (minimized: boolean) => void;
-  setActiveCall: (roomId: string | null) => void;
+  toggleMute: () => void;
+  toggleVideo: () => void;
+  setLocalStream: (stream: MediaStream | null) => void;
+  setRemoteStream: (stream: MediaStream | null) => void;
   clearCallState: () => void;
 }
 
 export const useCallStore = create<CallState>((set) => ({
-  isReceivingCall: false,
-  isIncomingCallOpen: false,
+  incomingCall: null,
+  activeCall: null,
+
   isCallMinimized: false,
   isFloatingDockVisible: false,
-  activeCallRoomId: null,
 
-  setIncomingCall: (isOpen, receiving, roomId) =>
-    set({
-      isIncomingCallOpen: isOpen,
-      isReceivingCall: receiving,
-      activeCallRoomId: roomId || null,
-    }),
+  isMuted: false,
+  isVideoOff: false,
 
-  minimizeCall: (minimized) =>
-    set({
-      isCallMinimized: minimized,
-      isFloatingDockVisible: minimized,
-    }),
+  localStream: null,
+  remoteStream: null,
 
-  setActiveCall: (roomId) =>
-    set({
-      activeCallRoomId: roomId,
-      isFloatingDockVisible: false,
-    }),
+  setIncomingCall: (call) => set({ incomingCall: call }),
+  
+  setActiveCall: (call) => set({ 
+    activeCall: call, 
+    isFloatingDockVisible: false,
+    incomingCall: null // auto clear incoming when active
+  }),
 
-  clearCallState: () =>
-    set({
-      isReceivingCall: false,
-      isIncomingCallOpen: false,
+  minimizeCall: (minimized) => set({
+    isCallMinimized: minimized,
+    isFloatingDockVisible: minimized,
+  }),
+
+  toggleMute: () => set((state) => {
+    if (state.localStream) {
+      state.localStream.getAudioTracks().forEach(track => {
+        track.enabled = state.isMuted; // Toggle to opposite of current state.isMuted
+      });
+    }
+    return { isMuted: !state.isMuted };
+  }),
+
+  toggleVideo: () => set((state) => {
+    if (state.localStream) {
+      state.localStream.getVideoTracks().forEach(track => {
+        track.enabled = state.isVideoOff; // Toggle
+      });
+    }
+    return { isVideoOff: !state.isVideoOff };
+  }),
+
+  setLocalStream: (stream) => set({ localStream: stream }),
+  
+  setRemoteStream: (stream) => set({ remoteStream: stream }),
+
+  clearCallState: () => set((state) => {
+    // Stop all tracks to release camera/mic
+    if (state.localStream) {
+      state.localStream.getTracks().forEach(t => t.stop());
+    }
+    return {
+      incomingCall: null,
+      activeCall: null,
       isCallMinimized: false,
       isFloatingDockVisible: false,
-      activeCallRoomId: null,
-    }),
+      isMuted: false,
+      isVideoOff: false,
+      localStream: null,
+      remoteStream: null,
+    };
+  }),
 }));

@@ -45,14 +45,25 @@ export interface FeedPage {
 
 // ─── Messages & Conversations ────────────────────────────────────
 export type MessageStatus = "sending" | "sent" | "delivered" | "read";
+export type MessageType = "TEXT" | "IMAGE" | "VIDEO" | "AUDIO" | "FILE" | "CALL_EVENT";
+
+export interface MediaAttachment {
+  id: string;
+  objectKey: string;
+  bucket: string;
+  mimeType: string;
+}
 
 export interface Message {
   id: string;
   conversationId: string;
   senderId: string;
-  content: string;
+  senderUserId?: string; // from API
+  content: string | null;
+  messageType: MessageType;
   status: MessageStatus;
   createdAt: string; // ISO 8601
+  attachments?: Array<{ mediaAsset: MediaAttachment }>;
 }
 
 export interface Conversation {
@@ -60,6 +71,8 @@ export interface Conversation {
   participant: User;
   lastMessage: Message | null;
   unreadCount: number;
+  /** true = non-friend sender → goes to "Tin nhắn chờ" tab */
+  isRequest: boolean;
   updatedAt: string; // ISO 8601
 }
 

@@ -15,6 +15,7 @@ const makeMsg = (
   senderId,
   content,
   status,
+  messageType: "TEXT",
   createdAt: new Date(Date.now() - 1000 * 60 * minutesAgo).toISOString(),
 });
 
@@ -25,6 +26,7 @@ export const MOCK_CONVERSATIONS: Conversation[] = [
     participant: MOCK_USERS[0], // Alex Rivers
     lastMessage: makeMsg("m1", "conv1", MOCK_USERS[0].id, "Hey! Did you see the new Vibly update?", 5),
     unreadCount: 2,
+    isRequest: false,
     updatedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
   },
   {
@@ -32,6 +34,7 @@ export const MOCK_CONVERSATIONS: Conversation[] = [
     participant: MOCK_USERS[2], // Sophia Lee
     lastMessage: makeMsg("m2", "conv2", MOCK_CURRENT_USER.id, "That photo was stunning 🌅", 32),
     unreadCount: 0,
+    isRequest: false,
     updatedAt: new Date(Date.now() - 1000 * 60 * 32).toISOString(),
   },
   {
@@ -39,6 +42,7 @@ export const MOCK_CONVERSATIONS: Conversation[] = [
     participant: MOCK_USERS[1], // Minh Nguyen
     lastMessage: makeMsg("m3", "conv3", MOCK_USERS[1].id, "Let me know when you're free to review the designs.", 120),
     unreadCount: 1,
+    isRequest: false,
     updatedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
   },
   {
@@ -46,6 +50,7 @@ export const MOCK_CONVERSATIONS: Conversation[] = [
     participant: MOCK_USERS[3], // David Park
     lastMessage: makeMsg("m4", "conv4", MOCK_CURRENT_USER.id, "Good luck with the launch!", 1440),
     unreadCount: 0,
+    isRequest: false,
     updatedAt: new Date(Date.now() - 1000 * 60 * 1440).toISOString(),
   },
 ];

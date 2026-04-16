@@ -170,6 +170,7 @@ export function PostDetailView({ postId }: PostDetailViewProps) {
           postId={post.id}
           replyToUser={replyToUser}
           onCancelReply={() => setReplyToUser(null)}
+          onSubmit={(content) => {}}
         />
 
         {/* Comment list — all expanded, not just preview */}

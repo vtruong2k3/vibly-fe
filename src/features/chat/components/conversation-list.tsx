@@ -25,8 +25,40 @@ export function ConversationList({
       <div className="p-3 md:p-4 space-y-2">
         {conversations.map((conv) => {
           const isActive = conv.id === activeId;
-          const timeAgo = conv.lastMessage
-            ? formatDistanceToNow(new Date(conv.lastMessage.createdAt), {
+          const backendUser: any = conv.participant || (conv as any).members?.[0]?.user || {};
+          const participant = {
+            ...backendUser,
+            displayName: backendUser.profile?.displayName || backendUser.displayName || backendUser.username || "Chat",
+            avatarUrl: backendUser.profile?.avatarMediaId || backendUser.avatarUrl,
+          };
+          const getMessagePreview = (msg: any) => {
+            if (!msg) return "No messages yet";
+            if (msg.messageType === "IMAGE") return "[Hình ảnh]";
+            if (msg.messageType === "VIDEO") return "[Video]";
+            if (msg.messageType === "AUDIO") return "[Giọng nói]";
+            if (msg.messageType === "FILE") return "[Tệp tin đính kèm]";
+            if (msg.messageType === "CALL_EVENT") {
+              if (msg.content?.startsWith("{")) {
+                try {
+                  const payload = JSON.parse(msg.content);
+                  const isVideo = payload.callType === "VIDEO";
+                  switch (payload.event) {
+                    case "call_started": return isVideo ? "📞 Cuộc gọi Video" : "📞 Cuộc gọi thoại";
+                    case "call_ended": return payload.durationSeconds > 0 ? "📞 Cuộc gọi kết thúc" : "📞 Cuộc gọi nhỡ";
+                    case "call_rejected": return "📞 Từ chối cuộc gọi";
+                  }
+                } catch(e) {}
+              }
+              if (msg.content?.includes("hủy") || msg.content?.toLowerCase().includes("missed")) return "📞 Cuộc gọi nhỡ";
+              return "📞 Cuộc gọi";
+            }
+            return msg.content || "Có tin nhắn mới";
+          };
+
+          const lastMessage = conv.lastMessage || (conv as any).messages?.[0];
+
+          const timeAgo = lastMessage
+            ? formatDistanceToNow(new Date(lastMessage.createdAt), {
                 addSuffix: false,
               }).replace('about ', '').replace(' hours', 'h').replace(' minutes', 'm').replace(' days', 'd').replace(' months', 'mo')
             : "";
@@ -45,9 +77,9 @@ export function ConversationList({
               aria-current={isActive ? "true" : undefined}
             >
               <UserAvatar
-                user={conv.participant}
+                user={participant}
                 size="lg"
-                isOnline={conv.participant.isOnline}
+                isOnline={participant.isOnline}
                 className="shrink-0"
               />
 
@@ -58,7 +90,7 @@ export function ConversationList({
                     "text-[15px] truncate flex-1 min-w-0",
                     isActive ? "font-bold text-slate-900 dark:text-slate-100" : "font-semibold text-slate-800 dark:text-slate-200"
                   )}>
-                    {conv.participant.displayName}
+                    {participant.displayName || participant.username || "Chat"}
                   </span>
                   <span className={cn(
                     "text-[11px] shrink-0 font-medium uppercase tracking-wider",
@@ -74,7 +106,7 @@ export function ConversationList({
                       ? "font-bold text-slate-900 dark:text-slate-100" 
                       : (isActive ? "text-primary italic font-medium" : "text-slate-500 dark:text-slate-400")
                   )}>
-                    {conv.unreadCount > 0 ? "Sent a photo" : (conv.lastMessage?.content ?? "No messages yet")}
+                    {getMessagePreview(lastMessage)}
                   </p>
                   {conv.unreadCount > 0 && (
                     <Badge className="h-5 min-w-[20px] flex items-center justify-center px-1.5 text-[10px] font-bold bg-primary text-white rounded-full shadow-sm shrink-0">

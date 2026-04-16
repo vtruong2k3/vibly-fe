@@ -1,6 +1,15 @@
 "use client";
 
-import { Edit2, UserPlus, MessageCircle, UserCheck, Clock, UserMinus, X } from "lucide-react";
+import {
+  Edit2,
+  UserPlus,
+  MessageCircle,
+  UserCheck,
+  Clock,
+  UserMinus,
+  X,
+  Loader2,
+} from "lucide-react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,15 +31,15 @@ import {
 import { useCreateConversation } from "@/hooks/use-chat";
 import { useChatStore } from "@/store/chat.store";
 
-
-// ─── ProfileHeader ─────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 interface ProfileHeaderProps {
   profile: UserProfile & { id?: string };
   isCurrentUser: boolean;
 }
 
+// ─── ProfileHeader ────────────────────────────────────────────────────────────
 export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
-  const { status, requestId } = useFriendshipStatus(profile.id);
+  const { status, requestId, isLoading } = useFriendshipStatus(profile.id);
   const sendRequest = useSendFriendRequest();
   const removeFriend = useRemoveFriend();
   const cancelRequest = useCancelRequest(profile.id);
@@ -48,17 +57,115 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
     if (!profile.id) return;
     createConversation.mutate(
       { participantIds: [profile.id], type: "DIRECT" },
-      {
-        onSuccess: (conversation) => {
-          openChat(conversation.id);
-        },
-      }
+      { onSuccess: (conv) => openChat(conv.id) }
     );
   };
 
   const handleRemoveFriend = () => {
     if (!profile.id) return;
     removeFriend.mutate(profile.id);
+  };
+
+  // ─── Render the correct friendship action button based on current status ──
+  const renderFriendButton = () => {
+    // While status is being fetched, show a neutral disabled button to prevent
+    // premature "Thêm bạn bè" flash before the real status arrives.
+    if (isLoading) {
+      return (
+        <Button className="rounded-full h-10 px-6 font-semibold" variant="secondary" disabled>
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          Đang tải...
+        </Button>
+      );
+    }
+
+    // Already friends → dropdown with unfriend option
+    if (status === "friends") {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="rounded-full h-10 px-6 font-semibold" variant="secondary">
+              <UserCheck className="h-4 w-4 mr-2" />
+              Bạn bè
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="rounded-xl w-48">
+            <DropdownMenuItem
+              onClick={handleRemoveFriend}
+              className="text-destructive focus:text-destructive focus:bg-destructive/10 focus:**:text-destructive cursor-pointer"
+            >
+              <UserMinus className="h-4 w-4 mr-2" />
+              Huỷ kết bạn
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    // Current user sent a request → show pending state with cancel option
+    if (status === "pending_outgoing") {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              className="rounded-full h-10 px-6 font-semibold"
+              variant="outline"
+              disabled={cancelRequest.isPending}
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Đã gửi lời mời
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="rounded-xl w-48">
+            <DropdownMenuItem
+              onClick={() => requestId && cancelRequest.mutate(requestId)}
+              className="text-destructive focus:text-destructive focus:bg-destructive/10 focus:**:text-destructive cursor-pointer"
+            >
+              <UserMinus className="h-4 w-4 mr-2" />
+              Thu hồi lời mời
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    // Current user received a request → two explicit inline buttons (not hidden in dropdown)
+    if (status === "pending_incoming") {
+      const isBusy = acceptRequest.isPending || rejectRequest.isPending;
+      return (
+        <>
+          <Button
+            className="rounded-full h-10 px-6 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => requestId && acceptRequest.mutate(requestId)}
+            disabled={isBusy}
+          >
+            <UserCheck className="h-4 w-4 mr-2" />
+            Xác nhận
+          </Button>
+          <Button
+            className="rounded-full h-10 px-6 font-semibold"
+            variant="secondary"
+            onClick={() => requestId && rejectRequest.mutate(requestId)}
+            disabled={isBusy}
+          >
+            <X className="h-4 w-4 mr-2" />
+            Xoá lời mời
+          </Button>
+        </>
+      );
+    }
+
+    // No relationship → add friend
+    return (
+      <Button
+        className="rounded-full h-10 px-6 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
+        onClick={handleAddFriend}
+        disabled={sendRequest.isPending}
+      >
+        <UserPlus className="h-4 w-4 mr-2" />
+        Thêm bạn bè
+      </Button>
+    );
   };
 
   return (
@@ -109,80 +216,8 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
               </Button>
             ) : (
               <>
-                {/* === Friend Button — dynamic based on status === */}
-                {status === "friends" ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button className="rounded-full h-10 px-6 font-semibold" variant="secondary">
-                        <UserCheck className="h-4 w-4 mr-2" />
-                        Bạn bè
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="rounded-xl w-48">
-                      <DropdownMenuItem
-                        onClick={handleRemoveFriend}
-                        className="text-destructive focus:text-destructive focus:bg-destructive/10 focus:**:text-destructive cursor-pointer"
-                      >
-                        <UserMinus className="h-4 w-4 mr-2" />
-                        Huỷ kết bạn
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : status === "pending_outgoing" ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button className="rounded-full h-10 px-6 font-semibold" variant="outline" disabled={cancelRequest.isPending}>
-                        <Clock className="h-4 w-4 mr-2" />
-                        Đã gửi lời mời
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="rounded-xl w-48">
-                      <DropdownMenuItem
-                        onClick={() => requestId && cancelRequest.mutate(requestId)}
-                        className="text-destructive focus:text-destructive focus:bg-destructive/10 focus:**:text-destructive cursor-pointer"
-                      >
-                        <UserMinus className="h-4 w-4 mr-2" />
-                        Thu hồi lời mời
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : status === "pending_incoming" ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button className="rounded-full h-10 px-6 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90" disabled={acceptRequest.isPending || rejectRequest.isPending}>
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Phản hồi lời mời
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="rounded-xl w-48">
-                      <DropdownMenuItem
-                        onClick={() => requestId && acceptRequest.mutate(requestId)}
-                        className="cursor-pointer font-semibold text-primary focus:text-primary focus:bg-primary/10 focus:**:text-primary"
-                      >
-                        <UserCheck className="h-4 w-4 mr-2" />
-                        Xác nhận
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => requestId && rejectRequest.mutate(requestId)}
-                        className="cursor-pointer font-semibold text-muted-foreground focus:text-muted-foreground"
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Xoá lời mời
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <Button
-                    className="rounded-full h-10 px-6 font-semibold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90"
-                    onClick={handleAddFriend}
-                    disabled={sendRequest.isPending}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Thêm bạn bè
-                  </Button>
-                )}
+                {renderFriendButton()}
 
-                {/* === Message Button === */}
                 <Button
                   className="rounded-full h-10 px-6 font-semibold shadow-sm bg-secondary text-primary hover:bg-secondary/80"
                   onClick={handleMessage}

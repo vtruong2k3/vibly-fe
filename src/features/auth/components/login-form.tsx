@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, MailWarning, Send } from "lucide-react";
 import { useState } from "react";
 import { isAxiosError } from "axios";
 import Link from "next/link";
@@ -21,14 +21,18 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas/login.schema";
 import { useAuthStore } from "@/store/auth.store";
+import { authService } from "@/lib/services/auth.service";
 
 // ─── LoginForm Component ─────────────────────────────────────────
 // Client Component: requires form state, event handlers
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
@@ -45,6 +49,7 @@ export function LoginForm() {
 
   const onSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
+    setUnverifiedEmail(null);
     try {
       await login({ email: values.email, password: values.password });
       // Reset useMe query to clear any cached 'isError' state from when user was logged out
@@ -53,8 +58,23 @@ export function LoginForm() {
       const redirectTo = searchParams.get("redirect") || "/";
       router.push(redirectTo);
     } catch (error) {
-      if (isAxiosError(error) && error.response?.data?.message) {
-        toast.error(error.response.data.message);
+      if (isAxiosError(error) && error.response?.data) {
+        const responseData = error.response.data;
+        // Check for structured error from backend (nested message object)
+        const errorPayload =
+          responseData?.message && typeof responseData.message === "object"
+            ? responseData.message
+            : responseData;
+
+        if (errorPayload?.code === "UNVERIFIED_EMAIL") {
+          setUnverifiedEmail(errorPayload.email || values.email);
+        } else {
+          const msg =
+            typeof responseData.message === "string"
+              ? responseData.message
+              : "An unexpected error occurred. Please try again.";
+          toast.error(msg);
+        }
       } else {
         toast.error("An unexpected error occurred. Please try again.");
       }
@@ -62,6 +82,20 @@ export function LoginForm() {
       setIsLoading(false);
     }
   };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail) return;
+    setIsResending(true);
+    try {
+      await authService.resendVerifyEmail({ email: unverifiedEmail });
+      toast.success("Verification email sent! Please check your inbox.");
+    } catch {
+      toast.error("Failed to resend. Please try again shortly.");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -74,6 +108,34 @@ export function LoginForm() {
           Log in to your digital sanctuary
         </p>
       </div>
+
+      {/* ── Unverified Email Alert ── */}
+      {unverifiedEmail && (
+        <Alert className="border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+          <MailWarning className="h-4 w-4 !text-amber-500" />
+          <AlertTitle className="font-semibold">Verify your email</AlertTitle>
+          <AlertDescription className="mt-1 space-y-3">
+            <p className="text-sm">
+              Check your inbox at <span className="font-medium">{unverifiedEmail}</span> and click the link to activate your account.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 gap-2 border-amber-500/50 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400"
+              onClick={handleResendVerification}
+              disabled={isResending}
+            >
+              {isResending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="h-3.5 w-3.5" />
+              )}
+              {isResending ? "Sending..." : "Resend verification email"}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* ── Social Login ── */}
       <div className="grid grid-cols-2 gap-3">
