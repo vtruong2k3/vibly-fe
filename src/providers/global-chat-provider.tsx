@@ -11,7 +11,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useConversationsQuery } from "@/hooks/use-conversations";
 import { useCallStore } from "@/store/call.store";
 import { IncomingCallModal } from "@/features/chat/components/incoming-call-modal";
-import { CallWindowWidget } from "@/features/chat/components/call-window-widget";
+import { GlobalCallOverlay } from "@/features/calls/components/global-call-overlay";
 import { useNotificationStore } from "@/store/notifications.store";
 
 export function GlobalChatProvider({ children }: { children: React.ReactNode }) {
@@ -241,7 +241,8 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
     <>
       {children}
       <IncomingCallModal />
-      <CallWindowWidget />
+      {/* Global PIP call overlay — persists across all routes */}
+      <GlobalCallOverlay />
     </>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { useCallStore } from "@/store/call.store";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,8 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRejectCall, useAcceptCall } from "@/hooks/use-calls";
 
 export function IncomingCallModal() {
-  const router = useRouter();
-  const { incomingCall, clearCallState } = useCallStore();
+  const { incomingCall, setActiveCall, clearCallState } = useCallStore();
   const { mutate: rejectCall } = useRejectCall();
   const { mutateAsync: acceptCallBackend } = useAcceptCall();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -42,12 +40,20 @@ export function IncomingCallModal() {
     if (audioRef.current) audioRef.current.pause();
 
     try {
-      // Notify backend we answered — BE marks session ACCEPTED and returns LiveKit token
+      // Notify backend — marks session ACCEPTED
       await acceptCallBackend(incomingCall.callSessionId);
 
-      // Clear incoming modal, then navigate to the LiveKit call page
-      clearCallState();
-      router.push(`/call/${incomingCall.callSessionId}`);
+      // Set active call — GlobalCallOverlay will pop up automatically (no navigation!)
+      setActiveCall({
+        callSessionId: incomingCall.callSessionId,
+        roomName: incomingCall.roomName,
+        callType: incomingCall.callType as "AUDIO" | "VIDEO",
+        callerUserId: incomingCall.callerUserId,
+        callerUsername: incomingCall.callerUsername,
+        calerDisplayName: incomingCall.calerDisplayName,
+        callerAvatarUrl: incomingCall.callerAvatarUrl,
+        otherUserId: incomingCall.callerUserId,
+      });
     } catch (err) {
       console.error("Failed to accept call:", err);
       clearCallState();

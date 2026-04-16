@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { X, Minus, Send, Loader2, Phone, Video } from "lucide-react";
 import { useStartCall } from "@/hooks/use-calls";
 import { useCallStore } from "@/store/call.store";
@@ -64,10 +63,8 @@ export function ChatBubbleWindow({ conversationId, index }: ChatBubbleWindowProp
   const { data: pages, isLoading } = useConversationMessages(isMinimized ? null : conversationId);
   const { mutateAsync: send, isPending: isSending } = useSendMessage(conversationId);
 
-  // Call Hooks
-  const router = useRouter();
-  const { mutateAsync: startDatabaseCall } = useStartCall();
   const { setActiveCall } = useCallStore();
+  const { mutateAsync: startDatabaseCall } = useStartCall();
 
   const handleInitiateCall = async (type: "AUDIO" | "VIDEO") => {
     if (!otherUser) return;
@@ -78,6 +75,7 @@ export function ChatBubbleWindow({ conversationId, index }: ChatBubbleWindowProp
         conversationId,
       });
 
+      // Store active call — GlobalCallOverlay pops up automatically
       setActiveCall({
         callSessionId: response.callSessionId,
         roomName: response.roomName,
@@ -88,9 +86,6 @@ export function ChatBubbleWindow({ conversationId, index }: ChatBubbleWindowProp
         calerDisplayName: displayName,
         callerAvatarUrl: avatarUrl,
       });
-
-      // Navigate to LiveKit call page — no raw SDP needed!
-      router.push(`/call/${response.callSessionId}`);
     } catch (e) {
       console.error("Failed to initiate call", e);
     }

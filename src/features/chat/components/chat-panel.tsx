@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Send, Phone, Video, MoreHorizontal, Smile, Loader2 } from "lucide-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { toast } from "sonner";
@@ -48,7 +47,6 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
   const { mutateAsync: send, isPending: isSending } = useSendMessage(conversationId);
 
   // Call Hooks
-  const router = useRouter();
   const { mutateAsync: startDatabaseCall } = useStartCall();
   const { setActiveCall } = useCallStore();
 
@@ -60,7 +58,7 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
         conversationId,
       });
 
-      // Store active call info for socket event listeners (call:accepted, call:ended, etc.)
+      // Store active call — GlobalCallOverlay will pop up automatically
       setActiveCall({
         callSessionId: response.callSessionId,
         roomName: response.roomName,
@@ -70,9 +68,6 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
         otherUserId: participant.id,
         calerDisplayName: participant.displayName,
       });
-
-      // Navigate to the LiveKit-powered call page — no SDP needed!
-      router.push(`/call/${response.callSessionId}`);
     } catch (e) {
       console.error("Failed to initiate call", e);
     }
