@@ -10,7 +10,6 @@ import { QUERY_KEYS } from "@/lib/api/constants";
 import { useAuthStore } from "@/store/auth.store";
 import { useConversationsQuery } from "@/hooks/use-conversations";
 import { useCallStore } from "@/store/call.store";
-import { useWebRTC } from "@/hooks/use-webrtc";
 import { IncomingCallModal } from "@/features/chat/components/incoming-call-modal";
 import { CallWindowWidget } from "@/features/chat/components/call-window-widget";
 import { useNotificationStore } from "@/store/notifications.store";
@@ -224,8 +223,6 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
     };
   }, [socket, pathname, qc, openConversation, openConversationIds, me]);
 
-  // Execute the global WebRTC hooks to attach its listeners implicitly
-  useWebRTC();
 
   return (
     <>

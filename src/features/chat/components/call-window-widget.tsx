@@ -1,43 +1,38 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { useCallStore } from "@/store/call.store";
-import { useWebRTC } from "@/hooks/use-webrtc";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Maximize2, Minimize2 } from "lucide-react";
+import { PhoneOff, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEndCall } from "@/hooks/use-calls";
 
+// ─── CallWindowWidget ─────────────────────────────────────────────────────────
+// Shows a floating mini-bar when a call is active but user navigated away from
+// the /call/[id] page. Provides a quick return-to-call and hang-up button.
 export function CallWindowWidget() {
-  const {
-    activeCall,
-    isMuted,
-    isVideoOff,
-    localStream,
-    remoteStream,
-    isCallMinimized,
-    minimizeCall,
-    toggleMute,
-    toggleVideo,
-    clearCallState,
-  } = useCallStore();
-
-  const { closePeerConnection } = useWebRTC();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { activeCall, clearCallState } = useCallStore();
   const { mutate: endCall } = useEndCall();
-
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
-
   const [callDuration, setCallDuration] = useState(0);
+
+  // Only show when there is an active call AND user is NOT already on the call page
+  const isOnCallPage = pathname?.startsWith("/call/");
+  const shouldShow = !!activeCall && !isOnCallPage;
 
   // Call Timer
   useEffect(() => {
-    if (!activeCall || !remoteStream) return;
+    if (!shouldShow) {
+      setCallDuration(0);
+      return;
+    }
     const interval = setInterval(() => {
       setCallDuration((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(interval);
-  }, [activeCall, remoteStream]);
+  }, [shouldShow]);
 
   const formatDuration = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -49,134 +44,63 @@ export function CallWindowWidget() {
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Attach streams to video elements
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
+  const handleReturnToCall = () => {
+    if (activeCall) {
+      router.push(`/call/${activeCall.callSessionId}`);
     }
-  }, [localStream]);
-
-  useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
-    }
-  }, [remoteStream]);
+  };
 
   const handleEndCall = () => {
     if (!activeCall) return;
     endCall(activeCall.callSessionId);
-    closePeerConnection();
     clearCallState();
   };
 
-  // Reset timer on unmount
-  useEffect(() => {
-    if (!activeCall) {
-      setCallDuration(0);
-    }
-  }, [activeCall]);
-
-  if (!activeCall) return null;
-
   return (
     <AnimatePresence>
-      <motion.div
-        layout
-        initial={{ opacity: 0, scale: 0.9, y: 50 }}
-        animate={{
-          opacity: 1,
-          scale: 1,
-          y: 0,
-          width: isCallMinimized ? 240 : 400,
-          height: isCallMinimized ? 340 : 560, // approx ratio
-        }}
-        exit={{ opacity: 0, scale: 0.8, y: 50 }}
-        className="fixed bottom-6 right-6 z-[100] bg-background/95 backdrop-blur shadow-2xl border rounded-2xl overflow-hidden flex flex-col"
-      >
-        {/* Header Bar */}
-        <div className="absolute top-0 left-0 right-0 z-10 p-3 bg-gradient-to-b from-black/60 to-transparent flex justify-between items-center text-white">
-          <div className="flex items-center gap-2 max-w-[70%]">
-            <span className="font-medium text-sm truncate drop-shadow-md">
+      {shouldShow && (
+        <motion.div
+          initial={{ opacity: 0, y: 60 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 60 }}
+          className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 bg-card border border-border rounded-2xl px-4 py-3 shadow-2xl"
+        >
+          {/* Pulsing indicator */}
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
+          </span>
+
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-semibold leading-tight truncate">
               {activeCall.calerDisplayName || activeCall.callerUsername}
             </span>
-            <span className="text-xs bg-red-500/80 px-2 py-0.5 rounded-full shadow-sm font-mono tracking-wider">
+            <span className="text-xs text-muted-foreground font-mono">
               {formatDuration(callDuration)}
             </span>
           </div>
+
           <Button
             variant="ghost"
             size="icon"
-            className="w-7 h-7 text-white hover:bg-white/20"
-            onClick={() => minimizeCall(!isCallMinimized)}
+            className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
+            onClick={handleReturnToCall}
+            title="Quay lại cuộc gọi"
           >
-            {isCallMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
-          </Button>
-        </div>
-
-        {/* Video Area */}
-        <div className="flex-1 relative bg-neutral-900 overflow-hidden">
-          {/* Main Remote Video (or empty state) */}
-          {remoteStream ? (
-            <video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-              className="w-full h-full object-cover transition-all"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/50 text-sm">
-              Waiting for peer...
-            </div>
-          )}
-
-          {/* Local Video PIP */}
-          {localStream && !isVideoOff && (
-            <div className="absolute bottom-4 right-4 w-28 h-40 bg-black rounded-lg overflow-hidden border-2 border-white/20 shadow-lg z-20">
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted // ALWAYS MUTED LOCALLY
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Controls Bar */}
-        <motion.div
-          layout
-          className="bg-card p-4 border-t flex items-center justify-center gap-4 shrink-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]"
-        >
-          <Button
-            variant={isMuted ? "destructive" : "secondary"}
-            size="icon"
-            className="w-12 h-12 rounded-full"
-            onClick={toggleMute}
-          >
-            {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-          </Button>
-
-          <Button
-            variant={isVideoOff ? "destructive" : "secondary"}
-            size="icon"
-            className="w-12 h-12 rounded-full"
-            onClick={toggleVideo}
-            disabled={activeCall.callType === "AUDIO"}
-          >
-            {isVideoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+            <Maximize2 className="h-4 w-4" />
           </Button>
 
           <Button
             variant="destructive"
             size="icon"
-            className="w-14 h-14 rounded-full shadow-lg ml-2 hover:bg-red-600 transition-colors"
+            className="h-8 w-8 rounded-full"
             onClick={handleEndCall}
+            title="Kết thúc cuộc gọi"
           >
-            <PhoneOff className="w-6 h-6" />
+            <PhoneOff className="h-4 w-4" />
           </Button>
         </motion.div>
-      </motion.div>
+      )}
     </AnimatePresence>
   );
 }

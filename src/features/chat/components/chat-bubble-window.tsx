@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { X, Minus, Send, Loader2, Phone, Video } from "lucide-react";
 import { useStartCall } from "@/hooks/use-calls";
-import { useWebRTC } from "@/hooks/use-webrtc";
 import { useCallStore } from "@/store/call.store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -65,8 +65,8 @@ export function ChatBubbleWindow({ conversationId, index }: ChatBubbleWindowProp
   const { mutateAsync: send, isPending: isSending } = useSendMessage(conversationId);
 
   // Call Hooks
+  const router = useRouter();
   const { mutateAsync: startDatabaseCall } = useStartCall();
-  const { startCall: emitWebRtcOffer } = useWebRTC();
   const { setActiveCall } = useCallStore();
 
   const handleInitiateCall = async (type: "AUDIO" | "VIDEO") => {
@@ -78,7 +78,7 @@ export function ChatBubbleWindow({ conversationId, index }: ChatBubbleWindowProp
         conversationId,
       });
 
-      const callSessionData = {
+      setActiveCall({
         callSessionId: response.callSessionId,
         roomName: response.roomName,
         callType: type,
@@ -87,12 +87,10 @@ export function ChatBubbleWindow({ conversationId, index }: ChatBubbleWindowProp
         otherUserId: otherUser.id,
         calerDisplayName: displayName,
         callerAvatarUrl: avatarUrl,
-      };
+      });
 
-      setActiveCall(callSessionData);
-
-      // Start the peer connection locally and emit SDP
-      await emitWebRtcOffer(otherUser.id, type, response.callSessionId);
+      // Navigate to LiveKit call page — no raw SDP needed!
+      router.push(`/call/${response.callSessionId}`);
     } catch (e) {
       console.error("Failed to initiate call", e);
     }

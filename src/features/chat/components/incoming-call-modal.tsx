@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useCallStore } from "@/store/call.store";
-import { useWebRTC } from "@/hooks/use-webrtc";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PhoneCall, PhoneOff, Video } from "lucide-react";
@@ -10,8 +10,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRejectCall, useAcceptCall } from "@/hooks/use-calls";
 
 export function IncomingCallModal() {
-  const { incomingCall, clearCallState, setActiveCall } = useCallStore();
-  const { answerCall } = useWebRTC();
+  const router = useRouter();
+  const { incomingCall, clearCallState } = useCallStore();
   const { mutate: rejectCall } = useRejectCall();
   const { mutateAsync: acceptCallBackend } = useAcceptCall();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -40,23 +40,17 @@ export function IncomingCallModal() {
   const handleAccept = async () => {
     if (!incomingCall) return;
     if (audioRef.current) audioRef.current.pause();
-    
-    // Switch to active call screen immediately
-    setActiveCall(incomingCall);
 
     try {
-      // Notify backend we answered it so the timer can officially start
+      // Notify backend we answered — BE marks session ACCEPTED and returns LiveKit token
       await acceptCallBackend(incomingCall.callSessionId);
 
-      // Create answer and emit SDP
-      await answerCall(
-        incomingCall.otherUserId,
-        incomingCall.callType,
-        incomingCall.callSessionId
-      );
+      // Clear incoming modal, then navigate to the LiveKit call page
+      clearCallState();
+      router.push(`/call/${incomingCall.callSessionId}`);
     } catch (err) {
-       console.error("Failed to answer call:", err);
-       clearCallState();
+      console.error("Failed to accept call:", err);
+      clearCallState();
     }
   };
 

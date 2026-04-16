@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Send, Phone, Video, MoreHorizontal, Smile, Loader2 } from "lucide-react";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { toast } from "sonner";
@@ -16,7 +17,6 @@ import { useMessagesQuery, useSendMessage } from "@/hooks/use-conversations";
 import { QUERY_KEYS } from "@/lib/api/constants";
 import type { Conversation } from "@/types";
 import { useStartCall } from "@/hooks/use-calls";
-import { useWebRTC } from "@/hooks/use-webrtc";
 import { useCallStore } from "@/store/call.store";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -48,8 +48,8 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
   const { mutateAsync: send, isPending: isSending } = useSendMessage(conversationId);
 
   // Call Hooks
+  const router = useRouter();
   const { mutateAsync: startDatabaseCall } = useStartCall();
-  const { startCall: emitWebRtcOffer } = useWebRTC();
   const { setActiveCall } = useCallStore();
 
   const handleInitiateCall = async (type: "AUDIO" | "VIDEO") => {
@@ -60,7 +60,8 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
         conversationId,
       });
 
-      const callSessionData = {
+      // Store active call info for socket event listeners (call:accepted, call:ended, etc.)
+      setActiveCall({
         callSessionId: response.callSessionId,
         roomName: response.roomName,
         callType: type,
@@ -68,12 +69,10 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
         callerUsername: "Me",
         otherUserId: participant.id,
         calerDisplayName: participant.displayName,
-      };
+      });
 
-      setActiveCall(callSessionData);
-
-      // Start the peer connection locally and emit SDP
-      await emitWebRtcOffer(participant.id, type, response.callSessionId);
+      // Navigate to the LiveKit-powered call page — no SDP needed!
+      router.push(`/call/${response.callSessionId}`);
     } catch (e) {
       console.error("Failed to initiate call", e);
     }

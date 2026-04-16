@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { LiveKitRoom, VideoConference } from "@livekit/components-react";
+import { LiveKitRoom, VideoConference, RoomAudioRenderer } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { useLiveKitToken, useEndCall } from "@/hooks/use-calls";
 import { CallControls } from "./call-controls";
@@ -61,6 +61,9 @@ export function CallRoomShell({ room, callId, localParticipantId }: CallRoomShel
     >
       {/* Floating header */}
       <CallHeader room={room} />
+
+      {/* Render audio output for ALL remote participants — critical for voice calls */}
+      <RoomAudioRenderer />
 
       {/* LiveKit default video/audio grid */}
       <div className="flex-1 pt-16 pb-24 overflow-hidden">
