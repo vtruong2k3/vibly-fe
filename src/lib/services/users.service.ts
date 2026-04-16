@@ -15,6 +15,8 @@ export interface UpdateProfileDto {
   hometown?: string;
   currentCity?: string;
   website?: string;
+  education?: string;
+  maritalStatus?: string;
   avatarMediaId?: string;
   coverMediaId?: string;
 }
@@ -24,12 +26,19 @@ export const usersService = {
   getMe: () =>
     apiClient.get(ENDPOINTS.users.me).then((r) => {
       const u = r.data.data;
+
+      const buildUrl = (media?: { bucket: string; objectKey: string }) => {
+        if (!media) return null;
+        const baseUrl = process.env.NEXT_PUBLIC_CDN_URL || `https://${media.bucket}.s3.ap-southeast-1.amazonaws.com`;
+        return `${baseUrl}/${media.objectKey}`;
+      };
+
       return {
         id: u.id,
         email: u.email,
         username: u.username,
         displayName: u.profile?.displayName ?? u.username,
-        avatarUrl: u.profile?.avatarMediaId ?? null,
+        avatarUrl: buildUrl(u.profile?.avatarMedia) ?? u.profile?.avatarMediaId ?? null,
         role: u.role
       };
     }),
@@ -49,16 +58,29 @@ export const usersService = {
   getUserById: (id: string) =>
     apiClient.get(ENDPOINTS.users.byId(id)).then((r) => {
       const u = r.data.data !== undefined ? r.data.data : r.data;
+
+      const buildUrl = (media?: { bucket: string; objectKey: string }) => {
+        if (!media) return null;
+        const baseUrl = process.env.NEXT_PUBLIC_CDN_URL || `https://${media.bucket}.s3.ap-southeast-1.amazonaws.com`;
+        return `${baseUrl}/${media.objectKey}`;
+      };
+
       return {
         id: u.id,
         username: u.username,
         displayName: u.profile?.displayName || u.username,
-        avatarUrl: u.profile?.avatarMediaId || null,
-        coverUrl: u.profile?.coverMediaId || null,
+        avatarUrl: buildUrl(u.profile?.avatarMedia) || u.profile?.avatarMediaId || null,
+        coverUrl: buildUrl(u.profile?.coverMedia) || u.profile?.coverMediaId || null,
         bio: u.profile?.bio || "",
         followersCount: 0,
         followingCount: 0,
         location: u.profile?.currentCity || null,
+        education: u.profile?.education || null,
+        maritalStatus: u.profile?.maritalStatus || null,
+        hometown: u.profile?.hometown || null,
+        website: u.profile?.website || null,
+        birthday: u.profile?.birthday || null,
+        gender: u.profile?.gender || null,
         createdAt: u.createdAt,
       };
     }),

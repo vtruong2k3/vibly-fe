@@ -6,6 +6,12 @@ export interface UserProfile extends User {
   followingCount: number;
   location: string | null;
   coverUrl: string | null;
+  education?: string | null;
+  maritalStatus?: string | null;
+  hometown?: string | null;
+  website?: string | null;
+  birthday?: string | null;
+  gender?: string | null;
 }
 
 export const MOCK_PROFILE: UserProfile = {

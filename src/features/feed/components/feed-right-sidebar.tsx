@@ -1,38 +1,84 @@
-import { MOCK_USERS } from "@/lib/mock-data/feed";
+"use client";
+
+import { useState } from "react";
+import { useFriends } from "@/hooks/use-friendships";
+import { usePresenceStore } from "@/store/presence.store";
+import { UserHeader } from "@/components/shared/user-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 // ─── FeedRightSidebar ──────────────────────────────────────────────
 export function FeedRightSidebar() {
+  const { data: friendsRaw } = useFriends();
+  const presences = usePresenceStore((s) => s.users);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Calculate real online friends
+  const friends = Array.isArray(friendsRaw) ? friendsRaw : [];
+  
+  // Sort friends: online first
+  const sortedFriends = [...friends].sort((a, b) => {
+    const aOnline = presences[a.user.id]?.isOnline ?? a.user.isOnline ?? false;
+    const bOnline = presences[b.user.id]?.isOnline ?? b.user.isOnline ?? false;
+    if (aOnline && !bOnline) return -1;
+    if (!aOnline && bOnline) return 1;
+    return 0;
+  });
+
+  const onlineFriends = sortedFriends.filter((f) => {
+    const fId = f.user.id;
+    return presences[fId]?.isOnline ?? f.user.isOnline ?? false;
+  });
+
+  const displayLimit = isExpanded ? sortedFriends.length : 5;
+
   return (
     <aside className="space-y-6 sticky top-6">
-      {/* Online Friends Widget */}
+      {/* Friends Widget */}
       <div className="vibly-card p-5 space-y-4 bg-muted/30">
         <div className="flex items-center justify-between">
-          <h3 className="font-heading font-semibold text-lg text-foreground">Online Friends</h3>
-          <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider">
-            24 ACTIVE
-          </span>
+          <h3 className="font-heading font-semibold text-lg text-foreground">Bạn bè</h3>
+          {onlineFriends.length > 0 && (
+            <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider">
+              {onlineFriends.length} ONLINE
+            </span>
+          )}
         </div>
         
-        <div className="flex items-center gap-[-8px]">
-          {MOCK_USERS.slice(0, 4).map((user, i) => (
-            <div
-              key={user.id}
-              className="relative rounded-full border-2 border-background overflow-hidden"
-              style={{ zIndex: 10 - i, marginLeft: i > 0 ? "-8px" : "0" }}
-            >
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={user.avatarUrl ?? undefined} alt={user.displayName} />
-                <AvatarFallback>{user.displayName[0]}</AvatarFallback>
-              </Avatar>
-            </div>
-          ))}
+        <div className="flex flex-col gap-3">
+          {sortedFriends.slice(0, displayLimit).map((f: any) => {
+            const rawUser = f.user;
+            const formattedUser = {
+              ...rawUser,
+              displayName: rawUser.profile?.displayName ?? rawUser.username,
+              avatarUrl: rawUser.profile?.avatarMediaId ?? rawUser.avatarUrl,
+            };
+
+            return (
+              <UserHeader
+                key={formattedUser.id}
+                user={formattedUser}
+                size="md"
+                withLink={true}
+                showOnlineBadge={false}
+                className="flex-1 min-w-0"
+              />
+            );
+          })}
+          {sortedFriends.length === 0 && (
+            <p className="text-xs text-muted-foreground pt-1">Chưa có bạn bè nào.</p>
+          )}
         </div>
         
-        <Button variant="ghost" className="w-full text-xs font-semibold tracking-wider text-muted-foreground hover:text-foreground justify-start px-0 pt-2">
-          VIEW ALL
-        </Button>
+        {sortedFriends.length > 5 && (
+          <Button 
+            variant="ghost" 
+            className="w-full text-xs font-semibold tracking-wider text-muted-foreground hover:text-foreground justify-center px-0 pt-2"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? "SHOW LESS" : "VIEW ALL"}
+          </Button>
+        )}
       </div>
 
       {/* Trending Sanctuary Widget */}

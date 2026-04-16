@@ -30,6 +30,8 @@ import {
 } from "@/hooks/use-friendships";
 import { useCreateConversation } from "@/hooks/use-chat";
 import { useChatStore } from "@/store/chat.store";
+import { ProfileEditModal } from "./profile-edit-modal";
+import { useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ProfileHeaderProps {
@@ -39,6 +41,8 @@ interface ProfileHeaderProps {
 
 // ─── ProfileHeader ────────────────────────────────────────────────────────────
 export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
   const { status, requestId, isLoading } = useFriendshipStatus(profile.id);
   const sendRequest = useSendFriendRequest();
   const removeFriend = useRemoveFriend();
@@ -173,12 +177,10 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
       {/* ── Cover Photo ── */}
       <div className="h-48 md:h-[280px] relative bg-muted w-full overflow-hidden">
         {profile.coverUrl ? (
-          <Image
+          <img
             src={profile.coverUrl}
             alt="Cover"
-            fill
-            className="object-cover"
-            priority
+            className="object-cover w-full h-full"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-accent/30 dark:from-primary/10 dark:to-accent/10" />
@@ -210,10 +212,21 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
           {/* Right: Action Buttons */}
           <div className="flex items-center justify-start sm:justify-end gap-3 z-10 mb-2 mt-4 sm:mt-0">
             {isCurrentUser ? (
-              <Button className="rounded-full h-10 px-6 font-semibold shadow-sm" variant="outline">
-                <Edit2 className="h-4 w-4 mr-2" />
-                Chỉnh sửa trang cá nhân
-              </Button>
+              <>
+                <Button 
+                  className="rounded-full h-10 px-6 font-semibold shadow-sm" 
+                  variant="outline"
+                  onClick={() => setIsEditModalOpen(true)}
+                >
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Chỉnh sửa trang cá nhân
+                </Button>
+                <ProfileEditModal 
+                  isOpen={isEditModalOpen} 
+                  onOpenChange={setIsEditModalOpen} 
+                  profile={profile as any} 
+                />
+              </>
             ) : (
               <>
                 {renderFriendButton()}

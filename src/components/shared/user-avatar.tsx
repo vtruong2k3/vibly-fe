@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { usePresenceStore } from "@/store/presence.store";
 import type { User } from "@/types";
 
 interface UserAvatarProps {
@@ -20,6 +21,11 @@ export function UserAvatar({ user, size = "md", className, isOnline }: UserAvata
   const avatarUrl = user?.avatarUrl ?? undefined;
   const initial = user?.displayName?.charAt(0) ?? "?";
 
+  // Real-time presence connection
+  const userId = (user as any)?.id;
+  const storePresence = usePresenceStore((s) => (userId ? s.users[userId] : undefined));
+  const isOnlineActive = storePresence?.isOnline ?? isOnline ?? false;
+
   return (
     <div className={cn("relative inline-block", className)}>
       <Avatar className={cn(sizeClasses[size])}>
@@ -28,8 +34,8 @@ export function UserAvatar({ user, size = "md", className, isOnline }: UserAvata
           {initial}
         </AvatarFallback>
       </Avatar>
-      
-      {isOnline && (
+
+      {isOnlineActive && (
         <span className="absolute bottom-[2%] right-[2%] w-2.5 h-2.5 rounded-full bg-success ring-2 ring-background z-10" />
       )}
     </div>

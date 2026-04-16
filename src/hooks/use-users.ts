@@ -32,6 +32,8 @@ export function useUpdateProfile() {
     mutationFn: (dto: UpdateProfileDto) => usersService.updateProfile(dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.me });
+      // Invalidate all user profiles so the updated user profile page refetches immediately
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
       toast.success("Profile updated!");
     },
     onError: () => toast.error("Failed to update profile."),
