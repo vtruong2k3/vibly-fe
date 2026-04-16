@@ -12,12 +12,17 @@ interface NotificationItemProps {
 const getNotificationIcon = (type: AppNotification["type"]) => {
   switch (type) {
     case "like_post":
+    case "POST_REACTION":
+    case "LIKE_POST":
       return <Heart className="h-4 w-4 text-destructive fill-destructive" />;
     case "comment_post":
+    case "COMMENT_POST":
       return <MessageSquare className="h-4 w-4 text-primary fill-primary/20" />;
     case "friend_request":
+    case "FRIEND_REQUEST":
       return <UserPlus className="h-4 w-4 text-accent" />;
     case "friend_accept":
+    case "FRIEND_ACCEPTED":
       return <UserCheck className="h-4 w-4 text-success" />;
     case "mention":
       return <AtSign className="h-4 w-4 text-orange-500" />;
@@ -27,21 +32,28 @@ const getNotificationIcon = (type: AppNotification["type"]) => {
 const getNotificationText = (notification: AppNotification) => {
   const actorName = (
     <span className="font-semibold text-foreground">
-      {notification.actor.displayName}
+      {notification.actor?.displayName || notification.actor?.username || "Ai đó"}
     </span>
   );
 
   switch (notification.type) {
     case "like_post":
-      return <>{actorName} liked your post.</>;
+    case "LIKE_POST":
+    case "POST_REACTION":
+      return <>{actorName} đã thả cảm xúc vào bài viết của bạn.</>;
     case "comment_post":
-      return <>{actorName} commented on your post.</>;
+    case "COMMENT_POST":
+      return <>{actorName} đã bình luận vào bài viết của bạn.</>;
     case "friend_request":
-      return <>{actorName} sent you a friend request.</>;
+    case "FRIEND_REQUEST":
+      return <>{actorName} đã gửi lời mời kết bạn.</>;
     case "friend_accept":
-      return <>{actorName} accepted your friend request.</>;
+    case "FRIEND_ACCEPTED":
+      return <>{actorName} đã chấp nhận lời mời kết bạn.</>;
     case "mention":
-      return <>{actorName} mentioned you in a comment.</>;
+      return <>{actorName} đã nhắc đến bạn trong một bình luận.</>;
+    default:
+      return <>{actorName} đã tương tác với bạn.</>;
   }
 };
 

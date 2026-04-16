@@ -12,7 +12,7 @@ export default function NotificationsPage() {
   const { data, isLoading, isError } = useNotificationsQuery();
   const { mutate: markAllRead, isPending } = useMarkAllRead();
 
-  const notifications = data?.notifications ?? [];
+  const notifications = data?.data ?? [];
   const unreadCount = notifications.filter((n: { isRead: boolean }) => !n.isRead).length;
 
   return (

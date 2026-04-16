@@ -110,7 +110,12 @@ export type NotificationType =
   | "comment_post"
   | "friend_request"
   | "friend_accept"
-  | "mention";
+  | "mention"
+  | "POST_REACTION"
+  | "LIKE_POST"
+  | "COMMENT_POST"
+  | "FRIEND_REQUEST"
+  | "FRIEND_ACCEPTED";
 
 export interface AppNotification {
   id: string;
