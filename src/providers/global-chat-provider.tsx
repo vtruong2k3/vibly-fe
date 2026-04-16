@@ -144,26 +144,27 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
     socket.on("call:ended", onCallEndedOrCanceled);
 
     // ── POST REAL-TIME EVENTS ──────────────────────────────────────────────────
-    // Reaction count changed: update both feed and profile post caches in-place
+    // Reaction count changed: update feed cache in-place via setQueriesData
     const onPostReaction = (data: { postId: string; reactionCount: number }) => {
-      const patchPost = (old: any): any => {
+      const patchFeedPages = (old: any): any => {
         if (!old?.pages) return old;
         return {
           ...old,
+          // Feed pages shape: { posts: Post[], nextCursor: string|null }
           pages: old.pages.map((page: any) => ({
             ...page,
-            data: (page.data ?? []).map((p: any) =>
-              p.id === data.postId ? { ...p, reactionCount: data.reactionCount } : p
+            posts: (page.posts ?? []).map((p: any) =>
+              p.id === data.postId
+                ? { ...p, likeCount: data.reactionCount }  // FE uses likeCount
+                : p
             ),
           })),
         };
       };
-      qc.setQueriesData({ queryKey: QUERY_KEYS.feed }, patchPost);
-      // Also invalidate so any profile page gets fresh data
-      qc.invalidateQueries({ queryKey: ["user-posts"] });
+      qc.setQueriesData({ queryKey: QUERY_KEYS.feed }, patchFeedPages);
     };
 
-    // New comment: increment commentCount on matching posts + invalidate comment list
+    // New comment: increment commentCount on matching posts + append to comment list
     const onPostNewComment = (data: { postId: string; comment: any }) => {
       const patchCommentCount = (old: any): any => {
         if (!old?.pages) return old;
@@ -171,25 +172,31 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
           ...old,
           pages: old.pages.map((page: any) => ({
             ...page,
-            data: (page.data ?? []).map((p: any) =>
-              p.id === data.postId ? { ...p, commentCount: (p.commentCount ?? 0) + 1 } : p
+            // Feed pages shape: { posts: Post[], nextCursor: string|null }
+            posts: (page.posts ?? []).map((p: any) =>
+              p.id === data.postId
+                ? { ...p, commentCount: (p.commentCount ?? 0) + 1 }
+                : p
             ),
           })),
         };
       };
       qc.setQueriesData({ queryKey: QUERY_KEYS.feed }, patchCommentCount);
-      // Append new comment into the comment list cache if already loaded
-      qc.setQueryData(["comments", data.postId], (old: any) => {
+      // Append new comment into the post comment list cache if already loaded
+      // postComments shape: { pages: [{ comments: [], nextCursor }] }
+      qc.setQueryData(QUERY_KEYS.postComments(data.postId), (old: any) => {
         if (!old?.pages) return old;
         return {
           ...old,
           pages: [
-            { ...old.pages[0], data: [...(old.pages[0]?.data ?? []), data.comment] },
+            {
+              ...old.pages[0],
+              comments: [...(old.pages[0]?.comments ?? []), data.comment],
+            },
             ...old.pages.slice(1),
           ],
         };
       });
-      qc.invalidateQueries({ queryKey: ["user-posts"] });
     };
 
     // ── NOTIFICATION BELL ─────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { MoreHorizontal } from "lucide-react";
 import Image from "next/image";
@@ -36,6 +36,10 @@ export function PostDetailView({ postId }: PostDetailViewProps) {
   const [isLiked, setIsLiked] = useState(post?.isLiked ?? false);
   const [likeCount, setLikeCount] = useState(post?.likeCount ?? 0);
   const [replyToUser, setReplyToUser] = useState<User | null>(null);
+
+  // Sync when real data replaces stale/mock (e.g. React Query updates)
+  useEffect(() => { if (post?.likeCount != null) setLikeCount(post.likeCount); }, [post?.likeCount]);
+  useEffect(() => { if (post?.isLiked != null) setIsLiked(post.isLiked); }, [post?.isLiked]);
 
   if (!post) {
     return (

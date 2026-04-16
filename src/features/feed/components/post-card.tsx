@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { MoreHorizontal, Bookmark } from "lucide-react";
 import Image from "next/image";
@@ -33,6 +33,10 @@ export function PostCard({ post }: PostCardProps) {
   const [isSaved, setIsSaved] = useState(post.isSaved ?? false);
   const [showComments, setShowComments] = useState(false);
   const [replyToUser, setReplyToUser] = useState<User | null>(null);
+
+  // Sync internal state when React Query pushes fresh data (from WebSocket)
+  useEffect(() => { setLikeCount(post.likeCount); }, [post.likeCount]);
+  useEffect(() => { setIsLiked(post.isLiked); }, [post.isLiked]);
 
   const { mutate: react } = useReactToPost(post.id);
   const { mutate: save } = useSavePost(post.id);
