@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSocket } from "@/providers/socket-provider";
 import { useChatStore } from "@/store/chat.store";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import { useNotificationStore } from "@/store/notifications.store";
 
 export function GlobalChatProvider({ children }: { children: React.ReactNode }) {
   const { socket, joinConversation } = useSocket();
+  const router = useRouter();
   const pathname = usePathname();
   const { openConversation, openConversationIds } = useChatStore();
   const qc = useQueryClient();
@@ -133,8 +134,20 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
       });
     };
 
-    const onCallEndedOrCanceled = () => {
+    const onCallEndedOrCanceled = (data: { callSessionId?: string }) => {
       useCallStore.getState().clearCallState();
+
+      // If user is currently on the /call/[id] page for this session, redirect them out.
+      // Use window.location.pathname (always fresh) rather than the stale pathname closure.
+      const callId = data?.callSessionId;
+      const currentPath =
+        typeof window !== "undefined" ? window.location.pathname : "";
+      if (callId && currentPath.startsWith(`/call/${callId}`)) {
+        router.push("/messages");
+      } else if (currentPath.startsWith("/call/")) {
+        // Fallback: no callSessionId in payload but user is on some /call page
+        router.push("/messages");
+      }
     };
 
     socket.on("call:incoming", onCallIncoming);

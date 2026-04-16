@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SocketProvider } from "@/providers/socket-provider";
 
 // ─── Fonts ───────────────────────────────────────────────────────
 const inter = Inter({
@@ -61,10 +62,13 @@ export default function RootLayout({
       <body className="h-full bg-background text-foreground antialiased" suppressHydrationWarning>
         <ThemeProvider>
           <QueryProvider>
-            <TooltipProvider delayDuration={300}>
-              {children}
-              <Toaster richColors position="top-right" />
-            </TooltipProvider>
+            {/* SocketProvider at root so socket persists across (main) and (call) route groups */}
+            <SocketProvider>
+              <TooltipProvider delayDuration={300}>
+                {children}
+                <Toaster richColors position="top-right" />
+              </TooltipProvider>
+            </SocketProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

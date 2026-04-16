@@ -1,41 +1,48 @@
 "use client";
 
-import { useState } from "react";
 import { Mic, MicOff, Video, VideoOff, PhoneOff, MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLocalParticipant } from "@livekit/components-react";
 
-// ─── CallControls ───────────────────────────────────────────────────
-// Bottom control bar for the call: mic, camera, end, options.
-// All state is local mock toggle — will connect to LiveKit API in production.
+// ─── CallControls ─────────────────────────────────────────────────────────────
+// Bottom control bar for the call: mic, camera, end.
+// Mic and camera state are driven by LiveKit's useLocalParticipant hook so
+// toggles actually mute/unmute the real tracks—not just local UI state.
 
 interface CallControlsProps {
   onEndCall?: () => void;
 }
 
 export function CallControls({ onEndCall }: CallControlsProps) {
-  const [isMicOn, setIsMicOn] = useState(true);
-  const [isCameraOn, setIsCameraOn] = useState(true);
+  const { localParticipant, isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
+
+  const handleMicToggle = () => {
+    localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled);
+  };
+
+  const handleCameraToggle = () => {
+    localParticipant.setCameraEnabled(!isCameraEnabled);
+  };
 
   return (
     <div className="absolute bottom-0 left-0 right-0 z-20 flex items-center justify-center gap-3 pb-8">
       {/* Background pill */}
       <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-full px-6 py-3 border border-white/10">
-        
+
         {/* Mic Toggle */}
         <ControlButton
-          isActive={isMicOn}
-          onClick={() => setIsMicOn((p) => !p)}
-          ariaLabel={isMicOn ? "Mute microphone" : "Unmute microphone"}
+          isActive={isMicrophoneEnabled}
+          onClick={handleMicToggle}
+          ariaLabel={isMicrophoneEnabled ? "Mute microphone" : "Unmute microphone"}
           activeIcon={<Mic className="h-5 w-5" />}
           inactiveIcon={<MicOff className="h-5 w-5" />}
         />
 
         {/* Camera Toggle */}
         <ControlButton
-          isActive={isCameraOn}
-          onClick={() => setIsCameraOn((p) => !p)}
-          ariaLabel={isCameraOn ? "Turn off camera" : "Turn on camera"}
+          isActive={isCameraEnabled}
+          onClick={handleCameraToggle}
+          ariaLabel={isCameraEnabled ? "Turn off camera" : "Turn on camera"}
           activeIcon={<Video className="h-5 w-5" />}
           inactiveIcon={<VideoOff className="h-5 w-5" />}
         />
@@ -66,7 +73,7 @@ export function CallControls({ onEndCall }: CallControlsProps) {
   );
 }
 
-// ─── ControlButton ──────────────────────────────────────────────────
+// ─── ControlButton ─────────────────────────────────────────────────────────────
 // Reusable toggle button for individual call controls.
 
 interface ControlButtonProps {
