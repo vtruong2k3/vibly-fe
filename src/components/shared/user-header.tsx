@@ -28,23 +28,13 @@ interface UserHeaderProps {
 }
 
 // ─── PresenceLabel ─────────────────────────────────────────────────
-// Reads from global presence store for real-time updates.
-// Falls back to prop values if user.id is not in the store yet.
 function PresenceLabel({
-  userId,
-  fallbackIsOnline,
-  fallbackLastSeenAt,
+  isOnline,
+  lastSeenAt,
 }: {
-  userId?: string;
-  fallbackIsOnline?: boolean;
-  fallbackLastSeenAt?: string | null;
+  isOnline: boolean;
+  lastSeenAt: string | null;
 }) {
-  // Subscribe to presence store for this specific user id
-  const presence = usePresenceStore((s) => (userId ? s.users[userId] : undefined));
-
-  const isOnline = presence?.isOnline ?? fallbackIsOnline ?? false;
-  const lastSeenAt = presence?.lastSeenAt ?? fallbackLastSeenAt ?? null;
-
   if (isOnline) {
     return (
       <span className="flex items-center gap-1.5 text-[13px] font-medium text-emerald-500">
@@ -87,6 +77,11 @@ export function UserHeader({
 }: UserHeaderProps) {
   const isSm = size === "sm";
 
+  // Subscribe to global store for real-time presence
+  const storePresence = usePresenceStore((s) => (user.id ? s.users[user.id] : undefined));
+  const isOnline = storePresence?.isOnline ?? user.isOnline ?? false;
+  const lastSeenAt = storePresence?.lastSeenAt ?? user.lastSeenAt ?? null;
+
   const Content = (
     <div className={cn("flex flex-col min-w-0 justify-center", className)}>
       <div className="flex items-center gap-2">
@@ -99,7 +94,7 @@ export function UserHeader({
         >
           {user.displayName}
         </span>
-        {showOnlineBadge && user.isOnline && (
+        {showOnlineBadge && isOnline && (
           <Badge
             variant="secondary"
             className="h-4 px-1.5 text-[10px] font-medium bg-[--color-success]/15 text-[--color-success] border-[--color-success]/20"
@@ -113,11 +108,9 @@ export function UserHeader({
           {subtitle}
         </span>
       ) : (
-        // Show real-time presence label (Active now / X phút trước / Offline)
         <PresenceLabel
-          userId={user.id}
-          fallbackIsOnline={user.isOnline}
-          fallbackLastSeenAt={user.lastSeenAt}
+          isOnline={isOnline}
+          lastSeenAt={lastSeenAt}
         />
       )}
     </div>

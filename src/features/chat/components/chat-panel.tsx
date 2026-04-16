@@ -102,12 +102,12 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
 
   const sendMessage = () => {
     if ((!draft.trim() && attachments.length === 0) || isSending || isUploading) return;
-    
+
     // 1. Capture state instantly
     const textToUpload = draft.trim();
     const mediaToUpload = [...attachments];
     const hasMedia = mediaToUpload.length > 0;
-    
+
     // 2. Optimistic UI - Clear input instantly
     setDraft("");
     setAttachments([]);
@@ -149,14 +149,14 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
     (async () => {
       try {
         const mediaIds: string[] = [];
-        
+
         if (hasMedia) {
           const { chatService } = await import("@/lib/services/chat.service");
-          
+
           for (const att of mediaToUpload) {
             const { file } = att;
             const isVideo = file.type.startsWith("video/");
-            
+
             const { mediaAssetId, presignedUrl } = await chatService.requestPresignedUrl({
               mimeType: file.type,
               mediaType: isVideo ? "VIDEO" : "IMAGE",
@@ -173,8 +173,8 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
         }
 
         // Call API
-        await send({ 
-          messageType, 
+        await send({
+          messageType,
           content: textToUpload || undefined,
           mediaIds: mediaIds.length > 0 ? mediaIds : undefined
         });
@@ -199,7 +199,7 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
               onClick={onBack}
               aria-label="Back to conversations"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
             </Button>
           )}
           <UserHeader
@@ -207,26 +207,25 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
             size="md"
             withLink={true}
             showOnlineBadge={false}
-            subtitle={participant.isOnline ? "Active now" : "Offline"}
             className="flex-1 min-w-0"
           />
         </div>
 
         {/* Header actions */}
         <div className="flex items-center gap-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-[--color-success]" 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-[--color-success]"
             aria-label="Voice call"
             onClick={() => handleInitiateCall("AUDIO")}
           >
             <Phone className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-primary" 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-primary"
             aria-label="Video call"
             onClick={() => handleInitiateCall("VIDEO")}
           >
@@ -241,45 +240,45 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
       {/* ── Messages ── */}
       <div className="flex-1 min-h-0 relative bg-white/40 dark:bg-black/20">
         <ScrollArea className="h-full w-full p-4">
-        <div className="space-y-4">
-          {isLoading && (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          )}
-
-          {/* isRequest Banner */}
-          {conversation.isRequest && !isLoading && (
-            <div className="flex flex-col items-center justify-center p-6 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl my-6 backdrop-blur-sm border-dashed border-2 border-slate-300 dark:border-slate-700">
-              <p className="text-sm text-slate-700 dark:text-slate-300 font-medium mb-3 text-center">
-                Đây là tin nhắn chờ từ <strong>{participant.displayName || participant.username || "Chat"}</strong>.
-                Họ sẽ không biết bạn đã đọc tin nhắn cho đến khi bạn phản hồi.
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" className="rounded-full shadow-sm">
-                  Chặn / Báo cáo
-                </Button>
-                <Button className="rounded-full shadow-sm px-6">
-                  Kết bạn để trò chuyện
-                </Button>
+          <div className="space-y-4">
+            {isLoading && (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               </div>
-            </div>
-          )}
+            )}
 
-          {messages.map((msg) => {
-            if (!msg) return null;
-            return (
-              <ChatBubble
-                key={msg.id}
-                message={msg as never}
-                isMine={(msg.senderUserId || msg.senderId) === currentUserId}
-                displayName={participant.displayName || participant.username || "Chat"}
-              />
-            );
-          })}
-          <div ref={bottomRef} />
-        </div>
-      </ScrollArea>
+            {/* isRequest Banner */}
+            {conversation.isRequest && !isLoading && (
+              <div className="flex flex-col items-center justify-center p-6 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl my-6 backdrop-blur-sm border-dashed border-2 border-slate-300 dark:border-slate-700">
+                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium mb-3 text-center">
+                  Đây là tin nhắn chờ từ <strong>{participant.displayName || participant.username || "Chat"}</strong>.
+                  Họ sẽ không biết bạn đã đọc tin nhắn cho đến khi bạn phản hồi.
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="rounded-full shadow-sm">
+                    Chặn / Báo cáo
+                  </Button>
+                  <Button className="rounded-full shadow-sm px-6">
+                    Kết bạn để trò chuyện
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {messages.map((msg) => {
+              if (!msg) return null;
+              return (
+                <ChatBubble
+                  key={msg.id}
+                  message={msg as never}
+                  isMine={(msg.senderUserId || msg.senderId) === currentUserId}
+                  displayName={participant.displayName || participant.username || "Chat"}
+                />
+              );
+            })}
+            <div ref={bottomRef} />
+          </div>
+        </ScrollArea>
       </div>
 
       {/* ── Input Bar (Liquid Glass) ── */}
@@ -326,9 +325,9 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
                 className="h-10 w-10 text-slate-500 hover:text-primary hover:bg-primary/10 shrink-0 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-paperclip"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-paperclip"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
               </Button>
-              
+
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-500 hover:text-foreground shrink-0 transition-colors">
@@ -336,8 +335,8 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent side="top" align="start" className="w-[320px] p-0 border-none shadow-2xl z-50">
-                  <EmojiPicker 
-                    theme={Theme.AUTO} 
+                  <EmojiPicker
+                    theme={Theme.AUTO}
                     onEmojiClick={(e) => setDraft((v) => v + e.emoji)}
                     lazyLoadEmojis={true}
                     searchPlaceHolder="Tìm kiếm emoji..."
