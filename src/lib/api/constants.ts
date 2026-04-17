@@ -1,6 +1,9 @@
 // ─── API Base ────────────────────────────────────────────────────────────────
 export const API_BASE_URL = "/api/v1";
 
+// Google OAuth requires a full absolute URL (browser redirect, not Axios proxy)
+export const GOOGLE_OAUTH_URL = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+
 // ─── API Endpoints ────────────────────────────────────────────────────────────
 // Single source of truth for ALL backend routes.
 // Pattern: ENDPOINTS.<domain>.<action>

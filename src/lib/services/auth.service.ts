@@ -1,5 +1,6 @@
 import apiClient from "@/lib/api/axios";
 import { ENDPOINTS } from "@/lib/api/constants";
+import type { AuthUser } from "@/store/auth.store";
 
 // ─── DTOs (matching backend schema exactly) ───────────────────────────────────
 export interface RegisterDto {
@@ -49,6 +50,12 @@ export const authService = {
       .post<{ success: boolean; data: LoginResponse }>(ENDPOINTS.auth.login, dto)
       .then((r) => r.data.data),
 
+  // Fetch current authenticated user — used after Google OAuth callback
+  getMe: () =>
+    apiClient
+      .get<{ success: boolean; data: AuthUser }>(ENDPOINTS.users.me)
+      .then((r) => r.data.data),
+
   logout: () =>
     apiClient.post(ENDPOINTS.auth.logout).then((r) => r.data),
 
@@ -67,3 +74,4 @@ export const authService = {
   resetPassword: (dto: ResetPasswordDto) =>
     apiClient.post(ENDPOINTS.auth.resetPassword, dto).then((r) => r.data),
 };
+
