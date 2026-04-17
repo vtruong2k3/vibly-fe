@@ -20,6 +20,8 @@ interface ProfileTabsProps {
 export function ProfileTabs({ profile, posts, isCurrentUser }: ProfileTabsProps) {
   const [isPending, startTransition] = useTransition();
 
+  const allPhotos = posts.flatMap(post => post.media ?? []);
+
   return (
     <Tabs defaultValue="posts" className="w-full">
       <div className="mt-8 mb-6 w-full max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -63,7 +65,7 @@ export function ProfileTabs({ profile, posts, isCurrentUser }: ProfileTabsProps)
             <aside className="hidden lg:block w-[320px] shrink-0 space-y-4">
               <ProfileStats profile={profile} />
               <ProfileIntroCard profile={profile} />
-              <ProfilePhotosCard />
+              <ProfilePhotosCard photos={allPhotos} />
             </aside>
 
             {/* Right Column: Feed / Tab Content */}
@@ -96,7 +98,7 @@ export function ProfileTabs({ profile, posts, isCurrentUser }: ProfileTabsProps)
             <div className="w-full lg:w-[320px] shrink-0 space-y-4">
               <ProfileStats profile={profile} />
               <ProfileIntroCard profile={profile} />
-              <ProfilePhotosCard />
+              <ProfilePhotosCard photos={allPhotos} />
             </div>
 
             {/* Right Column */}
@@ -184,7 +186,7 @@ export function ProfileTabs({ profile, posts, isCurrentUser }: ProfileTabsProps)
             <div className="w-full lg:w-[320px] shrink-0 space-y-4">
               <ProfileStats profile={profile} />
               <ProfileIntroCard profile={profile} />
-              <ProfilePhotosCard />
+              <ProfilePhotosCard photos={allPhotos} />
             </div>
 
             {/* Right Column */}
@@ -221,7 +223,7 @@ export function ProfileTabs({ profile, posts, isCurrentUser }: ProfileTabsProps)
             <div className="w-full lg:w-[320px] shrink-0 space-y-4">
               <ProfileStats profile={profile} />
               <ProfileIntroCard profile={profile} />
-              <ProfilePhotosCard />
+              <ProfilePhotosCard photos={allPhotos} />
             </div>
 
             {/* Right Column */}

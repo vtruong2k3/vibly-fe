@@ -130,7 +130,7 @@ export function CreatePostCard() {
       )}
 
       {/* ── Row 3: Actions + Post Button ── */}
-      <div className="flex items-center justify-between pl-[58px]">
+      <div className="flex items-center justify-between pl-0 sm:pl-[58px]">
         {/* Attachment actions */}
         <div className="flex items-center gap-1">
           {/* Hidden file inputs */}
@@ -160,7 +160,7 @@ export function CreatePostCard() {
             disabled={isBusy || files.length >= MAX_FILES}
           >
             <ImageIcon className="h-[18px] w-[18px]" />
-            Photo
+            <span className="hidden sm:inline">Photo</span>
           </Button>
 
           <Button
@@ -172,7 +172,7 @@ export function CreatePostCard() {
             disabled={isBusy || files.length >= MAX_FILES}
           >
             <Video className="h-[18px] w-[18px]" />
-            Video
+            <span className="hidden sm:inline">Video</span>
           </Button>
 
           {/* Emoji Popover */}
@@ -186,7 +186,7 @@ export function CreatePostCard() {
                 disabled={isBusy}
               >
                 <Smile className="h-[18px] w-[18px]" />
-                Feeling
+                <span className="hidden sm:inline">Feeling</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent

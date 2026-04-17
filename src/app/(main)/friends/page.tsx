@@ -3,7 +3,9 @@
 import { Loader2, Users, UserCheck } from "lucide-react";
 import { FriendRequestCard } from "@/features/friendships/components/friend-request-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { UserAvatar } from "@/components/shared/user-avatar";
 import { useFriendRequests, useFriends } from "@/hooks/use-friendships";
+import { buildMediaUrl } from "@/lib/utils";
 import type { FriendRequest } from "@/types";
 
 // ─── Friends Page ─────────────────────────────────────────────────────────────
@@ -20,7 +22,7 @@ export default function FriendsPage() {
         requester: {
           id: string;
           username: string;
-          profile?: { displayName?: string; avatarMediaId?: string | null };
+          profile?: { displayName?: string; avatarMediaId?: string | null; avatarMedia?: any };
         };
       }) => ({
         id: r.id,
@@ -31,7 +33,7 @@ export default function FriendsPage() {
           id: r.requester.id,
           username: r.requester.username,
           displayName: r.requester.profile?.displayName ?? r.requester.username,
-          avatarUrl: r.requester.profile?.avatarMediaId ?? null,
+          avatarUrl: buildMediaUrl(r.requester.profile?.avatarMedia) ?? r.requester.profile?.avatarMediaId ?? null,
           bio: null,
           isOnline: false,
           createdAt: r.createdAt,
@@ -93,17 +95,24 @@ export default function FriendsPage() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {(friends as Array<{
-                  user: { id: string; username: string; profile?: { displayName?: string; avatarMediaId?: string | null } };
+                  user: { id: string; username: string; isOnline?: boolean; profile?: { displayName?: string; avatarMediaId?: string | null; avatarMedia?: any } };
                 }>).map((f) => (
                   <a
                     key={f.user.id}
                     href={`/profile/${f.user.username}`}
                     className="vibly-card p-4 flex flex-col items-center text-center gap-2 hover:shadow-md transition-shadow cursor-pointer group"
                   >
-                    <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center text-2xl font-bold text-secondary-foreground group-hover:ring-2 group-hover:ring-primary transition-all">
-                      {(f.user.profile?.displayName ?? f.user.username)[0].toUpperCase()}
-                    </div>
-                    <p className="text-sm font-semibold text-foreground truncate w-full">
+                    <UserAvatar 
+                      user={{
+                        id: f.user.id,
+                        username: f.user.username,
+                        displayName: f.user.profile?.displayName ?? f.user.username,
+                        avatarUrl: buildMediaUrl(f.user.profile?.avatarMedia) ?? f.user.profile?.avatarMediaId ?? null,
+                      }} 
+                      size="xl" 
+                      isOnline={f.user.isOnline} 
+                    />
+                    <p className="text-sm font-semibold text-foreground truncate w-full mt-2">
                       {f.user.profile?.displayName ?? f.user.username}
                     </p>
                     <p className="text-xs text-muted-foreground">@{f.user.username}</p>

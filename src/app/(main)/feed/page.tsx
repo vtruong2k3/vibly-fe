@@ -32,9 +32,9 @@ export default function FeedPage() {
   const posts = data?.pages.flatMap((p) => p.posts) ?? [];
 
   return (
-    <div className="mx-auto flex justify-center lg:justify-between max-w-[1100px] gap-8 px-0 sm:px-4 py-4 md:py-8 lg:px-8">
+    <div className="mx-auto flex justify-center lg:justify-between max-w-[1400px] gap-6 xl:gap-8 px-2 sm:px-4 md:px-8 py-2 sm:py-4 md:py-8">
       {/* ── Main Feed Column ── */}
-      <div className="flex-1 w-full max-w-[620px] space-y-4 md:space-y-6">
+      <div className="flex-1 w-full max-w-[760px] 2xl:max-w-[1350px] 2xl:min-w-[900px] space-y-4 md:space-y-6">
         <CreatePostCard />
 
         <section aria-label="Your feed" className="space-y-4 md:space-y-6">
@@ -78,7 +78,7 @@ export default function FeedPage() {
       </div>
 
       {/* ── Right Sidebar Column ── */}
-      <div className="hidden w-[320px] shrink-0 lg:block">
+      <div className="hidden w-[380px] shrink-0 xl:block 2xl:w-[400px]">
         <FeedRightSidebar />
       </div>
     </div>

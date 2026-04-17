@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ChatBubble } from "./chat-bubble";
-import { cn } from "@/lib/utils";
+import { cn, buildMediaUrl } from "@/lib/utils";
 import { useMessagesQuery, useSendMessage } from "@/hooks/use-conversations";
 import { QUERY_KEYS } from "@/lib/api/constants";
 import type { Conversation } from "@/types";
@@ -40,7 +40,7 @@ export function ChatPanel({ conversation, currentUserId, onBack }: ChatPanelProp
   const participant = {
     ...backendUser,
     displayName: backendUser.profile?.displayName || backendUser.displayName || backendUser.username || "Chat",
-    avatarUrl: backendUser.profile?.avatarMediaId || backendUser.avatarUrl,
+    avatarUrl: buildMediaUrl(backendUser.profile?.avatarMedia) || backendUser.profile?.avatarMediaId || backendUser.avatarUrl,
   };
 
   const { data, isLoading } = useMessagesQuery(conversationId);

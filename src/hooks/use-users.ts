@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { usersService, type UpdateProfileDto } from "@/lib/services/users.service";
 import { friendshipsService, type SendFriendRequestDto } from "@/lib/services/friendships.service";
@@ -22,6 +22,18 @@ export function useUserProfile(id: string) {
     queryKey: QUERY_KEYS.userProfile(id),
     queryFn: () => usersService.getUserById(id),
     enabled: !!id,
+  });
+}
+
+// ─── useUserPosts — any user's public posts ──────────────────────────────────
+export function useUserPosts(userId: string | undefined) {
+  return useInfiniteQuery({
+    queryKey: QUERY_KEYS.userPosts(userId || ""),
+    queryFn: ({ pageParam }) =>
+      usersService.getUserPosts(userId!, { cursor: pageParam as string | undefined, limit: 10 }),
+    getNextPageParam: (lastPage) => lastPage.meta?.nextCursor ?? undefined,
+    initialPageParam: undefined,
+    enabled: !!userId,
   });
 }
 

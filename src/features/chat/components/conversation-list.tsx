@@ -4,7 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+import { cn, buildMediaUrl } from "@/lib/utils";
 import type { Conversation } from "@/types";
 
 // ─── Props ────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ export function ConversationList({
           const participant = {
             ...backendUser,
             displayName: backendUser.profile?.displayName || backendUser.displayName || backendUser.username || "Chat",
-            avatarUrl: backendUser.profile?.avatarMediaId || backendUser.avatarUrl,
+            avatarUrl: buildMediaUrl(backendUser.profile?.avatarMedia) || backendUser.profile?.avatarMediaId || backendUser.avatarUrl,
           };
           const getMessagePreview = (msg: any) => {
             if (!msg) return "No messages yet";

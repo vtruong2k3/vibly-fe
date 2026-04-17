@@ -104,6 +104,12 @@ export function useCommentsQuery(postId: string, enabled: boolean) {
 
 // Map backend comment shape → PostComment type
 function mapComment(c: any) {
+  const buildUrl = (media?: { bucket: string; objectKey: string }) => {
+    if (!media) return null;
+    const baseUrl = process.env.NEXT_PUBLIC_CDN_URL || `https://${media.bucket}.s3.ap-southeast-1.amazonaws.com`;
+    return `${baseUrl}/${media.objectKey}`;
+  };
+
   return {
     id: c.id,
     postId: c.postId,
@@ -116,7 +122,7 @@ function mapComment(c: any) {
       id: c.author.id,
       username: c.author.username,
       displayName: c.author.profile?.displayName || c.author.username,
-      avatarUrl: c.author.profile?.avatarUrl ?? null,
+      avatarUrl: buildUrl(c.author.profile?.avatarMedia) || c.author.profile?.avatarMediaId || null,
       bio: null,
       isOnline: false,
       createdAt: c.author.createdAt ?? new Date().toISOString(),

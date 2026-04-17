@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFriends } from "@/hooks/use-friendships";
 import { usePresenceStore } from "@/store/presence.store";
 import { UserHeader } from "@/components/shared/user-header";
+import { buildMediaUrl } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
@@ -51,7 +52,7 @@ export function FeedRightSidebar() {
             const formattedUser = {
               ...rawUser,
               displayName: rawUser.profile?.displayName ?? rawUser.username,
-              avatarUrl: rawUser.profile?.avatarMediaId ?? rawUser.avatarUrl,
+              avatarUrl: buildMediaUrl(rawUser.profile?.avatarMedia) ?? rawUser.profile?.avatarMediaId ?? rawUser.avatarUrl,
             };
 
             return (

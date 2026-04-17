@@ -6,7 +6,7 @@ import { useStartCall } from "@/hooks/use-calls";
 import { useCallStore } from "@/store/call.store";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, buildMediaUrl } from "@/lib/utils";
 import { useChatStore } from "@/store/chat.store";
 import { useConversationMessages, useSendMessage, useConversations } from "@/hooks/use-chat";
 import { useAuthStore } from "@/store/auth.store";
@@ -48,7 +48,7 @@ export function ChatBubbleWindow({ conversationId, index }: ChatBubbleWindowProp
   const otherMember = convo?.members?.find((m: any) => m.user.id !== me?.id);
   const otherUser = otherMember?.user;
   const displayName = otherUser?.profile?.displayName || otherUser?.username || "Chat";
-  const avatarUrl = otherUser?.profile?.avatarMediaId || null;
+  const avatarUrl = buildMediaUrl(otherUser?.profile?.avatarMedia) || otherUser?.profile?.avatarMediaId || null;
 
   const { joinConversation, leaveConversation } = useSocket();
   const qc = useQueryClient();

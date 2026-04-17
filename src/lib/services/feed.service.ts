@@ -14,11 +14,17 @@ function mapPostResponse(postData: any): Post {
     height: m.mediaAsset.height || 600,
   })) || [];
 
+  const buildUrl = (media?: { bucket: string; objectKey: string }) => {
+    if (!media) return null;
+    const baseUrl = process.env.NEXT_PUBLIC_CDN_URL || `https://${media.bucket}.s3.ap-southeast-1.amazonaws.com`;
+    return `${baseUrl}/${media.objectKey}`;
+  };
+
   const author = {
     id: postData.author.id,
     username: postData.author.username,
     displayName: postData.author.profile?.displayName || postData.author.username,
-    avatarUrl: postData.author.profile?.avatarUrl || null,
+    avatarUrl: buildUrl(postData.author.profile?.avatarMedia) || postData.author.profile?.avatarMediaId || null,
     bio: postData.author.profile?.bio || null,
     isOnline: false,
     createdAt: postData.author.createdAt || new Date().toISOString(),
