@@ -20,7 +20,7 @@ interface ProfileTabsProps {
 export function ProfileTabs({ profile, posts, isCurrentUser }: ProfileTabsProps) {
   const [isPending, startTransition] = useTransition();
 
-  const allPhotos = posts.flatMap(post => post.media ?? []);
+  const allPhotos = posts.flatMap(post => post.images ?? []);
 
   return (
     <Tabs defaultValue="posts" className="w-full">

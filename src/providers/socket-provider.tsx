@@ -91,6 +91,15 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       },
     );
 
+    // Security — Handle admin forced lockouts (suspend/ban)
+    socket.on("force_logout", ({ reason, message }: { reason: string; message: string }) => {
+      useAuthStore.getState().clearAuth();
+      tokenStorage.clear();
+      // Import dynamically or use standard JS alert if sonner/toast is not directly available here
+      // But we can just enforce a hard redirect which is safest for auth termination
+      window.location.href = `/login?reason=suspended&message=${encodeURIComponent(message)}`;
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;

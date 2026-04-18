@@ -24,7 +24,6 @@ export interface PostImage {
 }
 
 export interface Post {
-  [x: string]: never[];
   id: string;
   author: User;
   content: string;
