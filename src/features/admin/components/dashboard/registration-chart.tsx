@@ -16,7 +16,8 @@ import { ADMIN_QUERY_KEYS } from "@/lib/api/admin-constants";
 import adminAnalyticsService from "@/lib/services/admin-analytics.service";
 
 interface Props {
-  days: number;
+  from?: string;
+  to?: string;
 }
 
 function CustomTooltip({
@@ -39,10 +40,10 @@ function CustomTooltip({
   );
 }
 
-export default function RegistrationChart({ days }: Props) {
+export default function RegistrationChart({ from, to }: Props) {
   const { data, isLoading } = useQuery({
-    queryKey: [...ADMIN_QUERY_KEYS.analyticsRegistrations, days],
-    queryFn: () => adminAnalyticsService.getRegistrationTrend(days),
+    queryKey: [...ADMIN_QUERY_KEYS.analyticsRegistrations, from, to],
+    queryFn: () => adminAnalyticsService.getRegistrationTrend(from, to),
     staleTime: 60_000,
   });
 
@@ -73,7 +74,7 @@ export default function RegistrationChart({ days }: Props) {
 
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }} barSize={days <= 7 ? 20 : 10}>
+      <BarChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }} barSize={chartData.length <= 7 ? 20 : 10}>
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
         <XAxis
           dataKey="date"

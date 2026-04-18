@@ -14,35 +14,37 @@ type ApiEnvelope<T> = { success: boolean; data: T };
 
 const adminAnalyticsService = {
   /** Dashboard KPIs — mapped to normalised AnalyticsOverview shape */
-  getOverview: async (): Promise<AnalyticsOverview> => {
+  getOverview: async (from?: string, to?: string): Promise<AnalyticsOverview> => {
     const { data } = await adminApiClient.get<ApiEnvelope<BeAnalyticsOverview>>(
       ADMIN_ENDPOINTS.analytics.overview,
+      { params: { from, to } }
     );
     return mapAnalyticsOverview(data.data); // unwrap envelope
   },
 
-  /** Daily registration trend — last N days */
-  getRegistrationTrend: async (days = 30): Promise<AnalyticsTrend[]> => {
+  /** Daily registration trend — date range */
+  getRegistrationTrend: async (from?: string, to?: string): Promise<AnalyticsTrend[]> => {
     const { data } = await adminApiClient.get<ApiEnvelope<AnalyticsTrend[]>>(
       ADMIN_ENDPOINTS.analytics.registrations,
-      { params: { days } },
+      { params: { from, to } }
     );
     return data.data; // unwrap envelope
   },
 
-  /** Daily posts + comments trend — last N days */
-  getContentTrend: async (days = 30): Promise<AnalyticsContentTrend> => {
+  /** Daily posts + comments trend — date range */
+  getContentTrend: async (from?: string, to?: string): Promise<AnalyticsContentTrend> => {
     const { data } = await adminApiClient.get<ApiEnvelope<AnalyticsContentTrend>>(
       ADMIN_ENDPOINTS.analytics.content,
-      { params: { days } },
+      { params: { from, to } }
     );
     return data.data; // unwrap envelope
   },
 
   /** Report breakdown by reason code + status */
-  getReportsBreakdown: async (): Promise<AnalyticsReportBreakdown[]> => {
+  getReportsBreakdown: async (from?: string, to?: string): Promise<AnalyticsReportBreakdown[]> => {
     const { data } = await adminApiClient.get<ApiEnvelope<AnalyticsReportBreakdown[]>>(
       ADMIN_ENDPOINTS.analytics.reportsBreakdown,
+      { params: { from, to } }
     );
     return data.data; // unwrap envelope
   },

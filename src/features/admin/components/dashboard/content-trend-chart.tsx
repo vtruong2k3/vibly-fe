@@ -16,7 +16,8 @@ import { ADMIN_QUERY_KEYS } from "@/lib/api/admin-constants";
 import adminAnalyticsService from "@/lib/services/admin-analytics.service";
 
 interface Props {
-  days: number;
+  from?: string;
+  to?: string;
 }
 
 // Custom dark-mode tooltip
@@ -44,10 +45,10 @@ function CustomTooltip({
   );
 }
 
-export default function ContentTrendChart({ days }: Props) {
+export default function ContentTrendChart({ from, to }: Props) {
   const { data, isLoading } = useQuery({
-    queryKey: [...ADMIN_QUERY_KEYS.analyticsContent, days],
-    queryFn: () => adminAnalyticsService.getContentTrend(days),
+    queryKey: [...ADMIN_QUERY_KEYS.analyticsContent, from, to],
+    queryFn: () => adminAnalyticsService.getContentTrend(from, to),
     staleTime: 60_000,
   });
 

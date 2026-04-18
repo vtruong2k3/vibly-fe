@@ -42,10 +42,15 @@ function CustomTooltip({
   );
 }
 
-export default function ReportsBreakdownChart() {
+interface Props {
+  from?: string;
+  to?: string;
+}
+
+export default function ReportsBreakdownChart({ from, to }: Props) {
   const { data, isLoading } = useQuery({
-    queryKey: ADMIN_QUERY_KEYS.analyticsReports,
-    queryFn: () => adminAnalyticsService.getReportsBreakdown(),
+    queryKey: [...ADMIN_QUERY_KEYS.analyticsReports, from, to],
+    queryFn: () => adminAnalyticsService.getReportsBreakdown(from, to),
     staleTime: 60_000,
   });
 

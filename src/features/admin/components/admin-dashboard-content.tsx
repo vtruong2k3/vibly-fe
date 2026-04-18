@@ -13,11 +13,13 @@ import type { AnalyticsOverview, BeAnalyticsOverview } from "@/types/admin.types
 import { mapAnalyticsOverview } from "@/types/admin.types";
 import { cn } from "@/lib/utils";
 import ContentTrendChart from "@/features/admin/components/dashboard/content-trend-chart";
-import RegistrationChart from "@/features/admin/components/dashboard/registration-chart";
 import ReportsBreakdownChart from "@/features/admin/components/dashboard/reports-breakdown-chart";
+import adminAnalyticsService from "@/lib/services/admin-analytics.service";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type Period = 7 | 30 | 90;
+import { subDays } from "date-fns";
+import { DateRange } from "react-day-picker";
+import { DatePickerWithRange } from "@/features/admin/components/dashboard/date-range-picker";
+import RegistrationChart from "@/features/admin/components/dashboard/registration-chart";
 
 // ─── Placeholder ──────────────────────────────────────────────────────────────
 const EMPTY: AnalyticsOverview = {
@@ -113,40 +115,18 @@ function ChartCard({ title, subtitle, children }: {
   );
 }
 
-// ─── Period Selector ──────────────────────────────────────────────────────────
-function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
-  return (
-    <div className="flex items-center gap-1 rounded-lg bg-white/[0.03] border border-white/5 p-0.5">
-      {([7, 30, 90] as Period[]).map((p) => (
-        <button
-          key={p}
-          onClick={() => onChange(p)}
-          className={cn(
-            "px-3 py-1 text-xs font-medium rounded-md transition-all duration-150",
-            value === p
-              ? "bg-blue-500/20 text-blue-300 shadow-sm"
-              : "text-slate-500 hover:text-slate-300",
-          )}
-        >
-          {p}d
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ─── Dashboard Content ────────────────────────────────────────────────────────
 export default function AdminDashboardContent() {
-  const [period, setPeriod] = useState<Period>(30);
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 29),
+    to: new Date(),
+  });
+
+  const fromStr = date?.from?.toISOString();
+  const toStr = date?.to?.toISOString();
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ADMIN_QUERY_KEYS.analyticsOverview,
-    queryFn: async () => {
-      const res = await adminApiClient.get<{ success: boolean; data: BeAnalyticsOverview }>(
-        ADMIN_ENDPOINTS.analytics.overview,
-      );
-      return mapAnalyticsOverview(res.data.data);
-    },
+    queryKey: [...ADMIN_QUERY_KEYS.analyticsOverview, fromStr, toStr],
+    queryFn: () => adminAnalyticsService.getOverview(fromStr, toStr),
     placeholderData: EMPTY,
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -165,7 +145,7 @@ export default function AdminDashboardContent() {
           <p className="text-xs text-slate-500 mt-0.5">System health at a glance</p>
         </div>
         <div className="flex items-center gap-3">
-          <PeriodSelector value={period} onChange={setPeriod} />
+          <DatePickerWithRange date={date} onDateChange={setDate} />
           <button
             onClick={() => void refetch()}
             disabled={isFetching}
@@ -212,17 +192,17 @@ export default function AdminDashboardContent() {
         <div className="lg:col-span-3">
           <ChartCard
             title="Content Activity"
-            subtitle={`Posts & comments — last ${period} days`}
+            subtitle="Posts & comments — selected period"
           >
-            <ContentTrendChart days={period} />
+            <ContentTrendChart from={fromStr} to={toStr} />
           </ChartCard>
         </div>
         <div className="lg:col-span-2">
           <ChartCard
             title="New Registrations"
-            subtitle={`Daily signups — last ${period} days`}
+            subtitle="Daily signups — selected period"
           >
-            <RegistrationChart days={period} />
+            <RegistrationChart from={fromStr} to={toStr} />
           </ChartCard>
         </div>
       </div>
@@ -231,7 +211,7 @@ export default function AdminDashboardContent() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1">
           <ChartCard title="Report Breakdown" subtitle="By violation type">
-            <ReportsBreakdownChart />
+            <ReportsBreakdownChart from={fromStr} to={toStr} />
           </ChartCard>
         </div>
 
