@@ -26,7 +26,6 @@ const P0_NAV = [
 
 // P1 — visible to all authenticated admins, but some actions are ADMIN-only
 const P1_NAV = [
-  { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
   { href: "/admin/audit-log", icon: ScrollText, label: "Audit Log" },
   { href: "/admin/admins", icon: UserCog, label: "Admins & Roles", adminOnly: true },
 ] as const;
