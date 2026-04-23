@@ -7,6 +7,7 @@ import { useChatStore } from "@/store/chat.store";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/lib/api/constants";
+import { SOCKET_EVENTS } from "@/lib/constants/socket-events";
 import { useAuthStore } from "@/store/auth.store";
 import { useConversationsQuery } from "@/hooks/use-conversations";
 import { useCallStore } from "@/store/call.store";
@@ -32,13 +33,13 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
     const conversationsArray = Array.isArray(conversationsData)
       ? conversationsData
       : (conversationsData as any)?.data ?? (conversationsData as any)?.conversations ?? [];
-      
+
     // Seed presence store with the data from conversations API
     const presenceUpdates: Record<string, UserPresence> = {};
 
     conversationsArray.forEach((conv: any) => {
       joinConversation(conv.id);
-      
+
       // Update global presence state
       if (conv.members) {
         conv.members.forEach((m: any) => {
@@ -58,9 +59,9 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (!socket || !me) return;
-    
+
     const isMessagesPage = pathname?.startsWith("/messages");
-    
+
     const onNewMessage = (msg: any) => {
       // Refresh list to update UI Unread Badge
       qc.invalidateQueries({ queryKey: QUERY_KEYS.conversations });
@@ -68,7 +69,7 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
       const isMyMessage = (msg.senderUserId || msg.senderId) === me.id;
       // SKIP normal messages we sent (to prevent double-rendering optimistic UI), 
       // but ALLOW System messages / Call events to pass through so the UI updates natively!
-      if (isMyMessage && msg.messageType !== "CALL_EVENT" && msg.messageType !== "SYSTEM") return; 
+      if (isMyMessage && msg.messageType !== "CALL_EVENT" && msg.messageType !== "SYSTEM") return;
 
       if (!isMessagesPage) {
         if (!isMyMessage) {
@@ -106,38 +107,38 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
         }
 
         const firstPage = old.pages[0];
-        
+
         // KIỂM TRA TRÙNG LẶP RẤT QUAN TRỌNG:
         const currentMsgs = firstPage.messages || firstPage.data || [];
         // Nếu tin nhắn đã tồn tại (hoặc có tin nhắn optimistic cùng nội dung), thay thế nó!
-        const existingIdx = currentMsgs.findIndex((m: any) => 
-           m.id === msg.id || (m.isOptimistic && m.content === msg.content)
+        const existingIdx = currentMsgs.findIndex((m: any) =>
+          m.id === msg.id || (m.isOptimistic && m.content === msg.content)
         );
-        
+
         let newMsgList;
         if (existingIdx >= 0) {
-           newMsgList = [...currentMsgs];
-           newMsgList[existingIdx] = msg; // Replace optimistic with real msg
+          newMsgList = [...currentMsgs];
+          newMsgList[existingIdx] = msg; // Replace optimistic with real msg
         } else {
-           newMsgList = [msg, ...currentMsgs];
+          newMsgList = [msg, ...currentMsgs];
         }
 
         return {
           ...old,
           pages: [
-            { 
-              ...firstPage, 
+            {
+              ...firstPage,
               // React query có thể dùng 'data' hoặc 'messages' tùy lúc
-              messages: firstPage.messages ? newMsgList : undefined, 
-              data: firstPage.data ? newMsgList : undefined 
-            }, 
+              messages: firstPage.messages ? newMsgList : undefined,
+              data: firstPage.data ? newMsgList : undefined
+            },
             ...old.pages.slice(1)
           ],
         };
       });
     };
-    
-    socket.on("new_message", onNewMessage);
+
+    socket.on(SOCKET_EVENTS.NEW_MESSAGE, onNewMessage);
 
     // CALL EVENTS
     const onCallIncoming = (data: any) => {
@@ -169,10 +170,10 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
       }
     };
 
-    socket.on("call:incoming", onCallIncoming);
-    socket.on("call:canceled", onCallEndedOrCanceled);
-    socket.on("call:rejected", onCallEndedOrCanceled);
-    socket.on("call:ended", onCallEndedOrCanceled);
+    socket.on(SOCKET_EVENTS.CALL_INCOMING, onCallIncoming);
+    socket.on(SOCKET_EVENTS.CALL_CANCELED, onCallEndedOrCanceled);
+    socket.on(SOCKET_EVENTS.CALL_REJECTED, onCallEndedOrCanceled);
+    socket.on(SOCKET_EVENTS.CALL_ENDED, onCallEndedOrCanceled);
 
     // ── POST REAL-TIME EVENTS ──────────────────────────────────────────────────
     // Reaction count changed: update feed cache in-place via setQueriesData
@@ -239,19 +240,19 @@ export function GlobalChatProvider({ children }: { children: React.ReactNode }) 
       qc.invalidateQueries({ queryKey: QUERY_KEYS.notifications });
     };
 
-    socket.on("post:reaction_updated", onPostReaction);
-    socket.on("post:new_comment", onPostNewComment);
-    socket.on("new_notification", onNewNotification);
+    socket.on(SOCKET_EVENTS.POST_REACTION_UPDATED, onPostReaction);
+    socket.on(SOCKET_EVENTS.POST_NEW_COMMENT, onPostNewComment);
+    socket.on(SOCKET_EVENTS.NEW_NOTIFICATION, onNewNotification);
 
-    return () => { 
-      socket.off("new_message", onNewMessage); 
-      socket.off("call:incoming", onCallIncoming);
-      socket.off("call:canceled", onCallEndedOrCanceled);
-      socket.off("call:rejected", onCallEndedOrCanceled);
-      socket.off("call:ended", onCallEndedOrCanceled);
-      socket.off("post:reaction_updated", onPostReaction);
-      socket.off("post:new_comment", onPostNewComment);
-      socket.off("new_notification", onNewNotification);
+    return () => {
+      socket.off(SOCKET_EVENTS.NEW_MESSAGE, onNewMessage);
+      socket.off(SOCKET_EVENTS.CALL_INCOMING, onCallIncoming);
+      socket.off(SOCKET_EVENTS.CALL_CANCELED, onCallEndedOrCanceled);
+      socket.off(SOCKET_EVENTS.CALL_REJECTED, onCallEndedOrCanceled);
+      socket.off(SOCKET_EVENTS.CALL_ENDED, onCallEndedOrCanceled);
+      socket.off(SOCKET_EVENTS.POST_REACTION_UPDATED, onPostReaction);
+      socket.off(SOCKET_EVENTS.POST_NEW_COMMENT, onPostNewComment);
+      socket.off(SOCKET_EVENTS.NEW_NOTIFICATION, onNewNotification);
     };
   }, [socket, pathname, qc, openConversation, openConversationIds, me]);
 
