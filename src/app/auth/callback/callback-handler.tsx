@@ -68,10 +68,10 @@ export function AuthCallbackHandler() {
     }
 
     if (authStatus === "success") {
-      const token = extractAndClearOAuthCookie();
+      const token = searchParams.get("token");
 
       if (!token) {
-        // Cookie missing — expired (>60s) or already consumed
+        // Token missing from URL
         toast.error("Session expired. Please try signing in again.");
         router.replace("/login");
         return;

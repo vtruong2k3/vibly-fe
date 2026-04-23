@@ -72,11 +72,11 @@ function CallbackContent() {
     }
 
     if (authStatus === "success") {
-      const token = extractAndClearOAuthCookie();
+      const token = searchParams.get("token");
 
       if (!token) {
-        // Cookie missing — could be timing issue (>60s) or already consumed
-        toast.error("Session cookie not found. Please try signing in again.");
+        // Token missing from URL
+        toast.error("Session token not found. Please try signing in again.");
         router.replace("/login");
         return;
       }
