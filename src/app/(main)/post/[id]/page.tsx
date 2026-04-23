@@ -8,19 +8,65 @@ interface PostPageProps {
   params: Promise<{ id: string }>;
 }
 
+// ─── Server-side post fetch for metadata ────────────────────────────────────
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+
+async function fetchPostForMeta(id: string) {
+  try {
+    const res = await fetch(`${API}/posts/${id}`, {
+      next: { revalidate: 120 },
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data ?? json;
+  } catch {
+    return null;
+  }
+}
+
+// ─── generateMetadata — real post data for SEO & share preview ──────────────
 export async function generateMetadata({
   params,
 }: PostPageProps): Promise<Metadata> {
   const { id } = await params;
-  // TODO: Fetch real post for metadata in production via GET /posts/:id
+  const post = await fetchPostForMeta(id);
+
+  if (!post) {
+    return { title: "Post — Vibly" };
+  }
+
+  const authorName =
+    post.author?.profile?.displayName ?? post.author?.username ?? "Vibly User";
+  const content = post.content
+    ? post.content.slice(0, 155)
+    : `A post by ${authorName} on Vibly.`;
+  const title = `${authorName} on Vibly`;
+
+  // First attached image used as og:image
+  const ogImage =
+    post.media?.[0]?.url ?? post.media?.[0]?.objectKey
+      ? `${process.env.NEXT_PUBLIC_CDN_URL}/${post.media[0].objectKey}`
+      : undefined;
+
   return {
-    title: `Post — Vibly`,
-    description: `View post ${id} on Vibly.`,
+    title,
+    description: content,
+    openGraph: {
+      title,
+      description: content,
+      type: "article",
+      ...(ogImage && { images: [{ url: ogImage }] }),
+    },
+    twitter: {
+      card: ogImage ? "summary_large_image" : "summary",
+      title,
+      description: content,
+      ...(ogImage && { images: [ogImage] }),
+    },
   };
 }
 
-// ─── Post Detail Page — Server Component ──────────────────────────
-// In production: fetch post via GET /posts/:id (server-side)
+// ─── Post Detail Page — Server Component ─────────────────────────────────────
 export default async function PostPage({ params }: PostPageProps) {
   const { id } = await params;
 
