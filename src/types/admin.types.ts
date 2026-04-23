@@ -34,6 +34,7 @@ export interface AdminUserListItem {
   id: string;
   username: string;
   email: string;
+  avatar?: string;
   role: UserRole;
   status: UserStatus;
   emailVerifiedAt: string | null;
@@ -122,12 +123,34 @@ export interface AdminReportListItem {
   targetType: ReportTargetType;
   targetId: string;
   reasonCode: string;
+  reasonNote?: string;
   severity: ReportSeverity;
   status: ReportStatus;
   createdAt: string;
   updatedAt?: string;
-  reporter?: { id: string; username: string };
-  assignedTo?: { id: string; username: string } | null;
+  reporter?: { id: string; username: string; avatar?: string };
+  assignedTo?: { id: string; username: string; avatar?: string } | null;
+  targetUser?: { id: string; username: string; avatar?: string };
+  targetPost?: { id: string; content?: string; author?: { id: string; username: string; avatar?: string } };
+  targetComment?: { id: string; content?: string; author?: { id: string; username: string; avatar?: string } };
+}
+
+// ─── Moderation Settings ──────────────────────────────────────────────────────
+export interface AdminKeywordListItem {
+  id: string;
+  keyword: string;
+  severity: ReportSeverity;
+  createdAt: string;
+  creator: { id: string; username: string };
+}
+
+export interface SystemSetting {
+  key: string;
+  value: string;
+  type: string;
+  description: string | null;
+  updatedAt: string;
+  updatedBy: string | null;
 }
 
 // ─── Analytics (BE exact response shapes) ────────────────────────────────────
@@ -173,17 +196,17 @@ export interface AnalyticsOverview {
 /** Mapper: converts raw BE response to normalised UI shape */
 export function mapAnalyticsOverview(be: BeAnalyticsOverview): AnalyticsOverview {
   return {
-    totalUsers:      be.users.total,
-    activeUsers:     be.users.active,
-    suspendedUsers:  be.users.suspended,
-    bannedUsers:     be.users.banned,
-    newUsersToday:   be.users.newToday,
-    deltaNewUsers:   be.users.deltaNewUsers,
+    totalUsers: be.users.total,
+    activeUsers: be.users.active,
+    suspendedUsers: be.users.suspended,
+    bannedUsers: be.users.banned,
+    newUsersToday: be.users.newToday,
+    deltaNewUsers: be.users.deltaNewUsers,
     totalPostsToday: be.content.postsToday,
-    commentsToday:   be.content.commentsToday,
-    deltaPosts:      be.content.deltaPosts,
-    deltaComments:   be.content.deltaComments,
-    reportsPending:  be.reports.pending,
+    commentsToday: be.content.commentsToday,
+    deltaPosts: be.content.deltaPosts,
+    deltaComments: be.content.deltaComments,
+    reportsPending: be.reports.pending,
     reportsCritical: be.reports.critical,
   };
 }

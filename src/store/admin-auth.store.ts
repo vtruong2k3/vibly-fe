@@ -35,7 +35,7 @@ export const useAdminAuthStore = create<AdminAuthState>()(
 
       setAdmin: (admin, token) => {
         adminTokenStorage.set(token);
-        set({ admin, isAuthenticated: true });
+        set({ admin, isAuthenticated: true, authStatus: "authenticated" });
       },
 
       setTotpVerified: () => set({ isTotpVerified: true }),

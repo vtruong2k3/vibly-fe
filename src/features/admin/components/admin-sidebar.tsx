@@ -1,106 +1,84 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import React from 'react';
 import {
   LayoutDashboard,
   Users,
   FileText,
+  AlertCircle,
+  Users2,
   MessageSquare,
-  Flag,
-  ShieldAlert,
   BarChart3,
-  ScrollText,
-  UserCog,
-} from "lucide-react";
-import { useAdminAuthStore } from "@/store/admin-auth.store";
-import { cn } from "@/lib/utils";
+  Settings,
+  ShieldUser
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-const P0_NAV = [
-  { href: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
-  { href: "/admin/users", icon: Users, label: "Users", exact: false },
-  { href: "/admin/content/posts", icon: FileText, label: "Posts", exact: false },
-  { href: "/admin/content/comments", icon: MessageSquare, label: "Comments", exact: false },
-  { href: "/admin/reports", icon: Flag, label: "Reports", exact: false },
-] as const;
-
-// P1 — visible to all authenticated admins, but some actions are ADMIN-only
-const P1_NAV = [
-  { href: "/admin/audit-log", icon: ScrollText, label: "Audit Log" },
-  { href: "/admin/admins", icon: UserCog, label: "Admins & Roles", adminOnly: true },
-] as const;
-
-function NavItem({
-  href,
-  icon: Icon,
-  label,
-  exact = false,
-}: {
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  exact?: boolean;
-}) {
-  const pathname = usePathname();
-  const isActive = exact ? pathname === href : pathname.startsWith(href);
-
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-        isActive
-          ? "bg-blue-500/10 text-blue-400"
-          : "text-slate-400 hover:text-slate-200 hover:bg-white/5",
-      )}
-    >
-      <Icon className="size-4 shrink-0" />
-      {label}
-    </Link>
-  );
-}
+const navItems = [
+  { id: 'overview', href: '/admin', label: 'Overview', icon: LayoutDashboard },
+  { id: 'users', href: '/admin/users', label: 'Users', icon: Users },
+  { id: 'posts', href: '/admin/posts', label: 'Posts', icon: FileText },
+  { id: 'reports', href: '/admin/reports', label: 'Reports', icon: AlertCircle },
+  { id: 'communities', href: '/admin/communities', label: 'Communities', icon: Users2 },
+  { id: 'messages', href: '/admin/messages', label: 'Messages', icon: MessageSquare },
+  { id: 'analytics', href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'settings', href: '/admin/settings', label: 'Settings', icon: Settings },
+];
 
 export default function AdminSidebar() {
-  const { hasPermission } = useAdminAuthStore();
-
-  const visibleP1 = P1_NAV.filter(
-    (item) => !("adminOnly" in item) || !item.adminOnly || hasPermission("ADMIN"),
-  );
+  const pathname = usePathname();
 
   return (
-    <aside className="w-60 shrink-0 flex flex-col border-r border-white/5 bg-[#0D1526]">
+    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0 overflow-y-auto shrink-0 z-20">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-white/5">
-        <ShieldAlert className="size-5 text-blue-400" />
-        <span className="font-semibold text-white text-sm tracking-wide">
-          Vibly Admin
-        </span>
+      <div className="p-6 flex items-center gap-3">
+        <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+          L
+        </div>
+        <div>
+          <h1 className="font-bold text-gray-900 leading-none">LoopSpace Admin</h1>
+          <p className="text-xs text-gray-500 mt-1">Network Control</p>
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {/* P0 core */}
-        {P0_NAV.map(({ href, icon, label, exact }) => (
-          <NavItem key={href} href={href} icon={icon} label={label} exact={exact ?? false} />
-        ))}
+      <nav className="flex-1 px-4 py-4 space-y-1">
+        {navItems.map((item) => {
+          // Compare exact for overview, else prefix
+          const isActive = item.href === '/admin'
+            ? pathname === '/admin'
+            : pathname.startsWith(item.href);
 
-        {/* P1 separator */}
-        {visibleP1.length > 0 && (
-          <>
-            <div className="pt-3 pb-1 px-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-700">
-                Insights
-              </p>
-            </div>
-            {visibleP1.map(({ href, icon, label }) => (
-              <NavItem key={href} href={href} icon={icon} label={label} />
-            ))}
-          </>
-        )}
+          return (
+            <Link
+              href={item.href}
+              key={item.id}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative ${isActive
+                  ? 'bg-indigo-50 text-indigo-700 font-medium'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+            >
+              <item.icon size={20} className={isActive ? 'text-indigo-600' : 'text-gray-400'} />
+              <span className="text-sm">{item.label}</span>
+              {isActive && (
+                <motion.div
+                  layoutId="sidebar-indicator"
+                  className="absolute right-4 w-1 h-4 bg-indigo-600 rounded-full"
+                />
+              )}
+            </Link>
+          )
+        })}
       </nav>
 
-      <div className="px-5 py-4 border-t border-white/5">
-        <p className="text-xs text-slate-700">Internal — confidential</p>
+      {/* Footer Action */}
+      <div className="p-4 mt-auto">
+        <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-xl flex items-center justify-center gap-2 font-medium transition-colors">
+          <ShieldUser size={18} />
+          <span>Moderation Queue</span>
+        </button>
       </div>
     </aside>
   );

@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -33,6 +34,39 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+
+  /* ─── Stitch Admin Theme Additional Tokens ─── */
+  --color-surface: var(--surface);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-tint: var(--surface-tint);
+
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+
+  --color-secondary-fixed: var(--secondary-fixed);
+  --color-secondary-container: var(--secondary-container);
+
+  --color-error: var(--error);
+  --color-on-error: var(--on-error);
+  --color-error-container: var(--error-container);
+  --color-on-error-container: var(--on-error-container);
+
+  --spacing-gutter: 24px;
+  --spacing-card-padding: 24px;
+  --spacing-container-margin: 32px;
+
+  --font-body-sm: var(--font-inter);
+  --font-body-base: var(--font-inter);
+  --font-label-caps: var(--font-inter);
+  --font-display-lg: var(--font-inter);
+  --font-headline-md: var(--font-inter);
+
   --font-sans: var(--font-inter);
   --font-heading: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -48,11 +82,14 @@
 /* ─── Light Mode ─────────────────────────────────────────────── */
 :root {
   /* Backgrounds */
-  --background: oklch(0.984 0.003 247.858);   /* #F8FAFC */
-  --foreground: oklch(0.129 0.042 264.695);   /* #0F172A */
+  --background: oklch(0.984 0.003 247.858);
+  /* #F8FAFC */
+  --foreground: oklch(0.129 0.042 264.695);
+  /* #0F172A */
 
   /* Card / Surface */
-  --card: oklch(1 0 0);                        /* #FFFFFF */
+  --card: oklch(1 0 0);
+  /* #FFFFFF */
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
@@ -66,19 +103,23 @@
   --secondary-foreground: oklch(0.379 0.146 264.695);
 
   /* Muted */
-  --muted: oklch(0.968 0.007 247.858);        /* #F1F5F9 */
-  --muted-foreground: oklch(0.478 0.051 258.338); /* #475569 */
+  --muted: oklch(0.968 0.007 247.858);
+  /* #F1F5F9 */
+  --muted-foreground: oklch(0.478 0.051 258.338);
+  /* #475569 */
 
   /* Accent — Orange #F59E0B */
   --accent: oklch(0.769 0.188 70.08);
   --accent-foreground: oklch(1 0 0);
 
   /* Status */
-  --success: oklch(0.793 0.171 162.48);       /* #34D399 */
+  --success: oklch(0.793 0.171 162.48);
+  /* #34D399 */
   --destructive: oklch(0.577 0.245 27.325);
 
   /* Borders / Inputs */
-  --border: oklch(0.906 0.013 255.531);       /* #E2E8F0 */
+  --border: oklch(0.906 0.013 255.531);
+  /* #E2E8F0 */
   --input: oklch(0.906 0.013 255.531);
   --ring: oklch(0.707 0.165 254.624);
 
@@ -94,13 +135,33 @@
   --sidebar-accent-foreground: oklch(0.379 0.146 264.695);
   --sidebar-border: oklch(0.906 0.013 255.531);
   --sidebar-ring: oklch(0.707 0.165 254.624);
+
+  /* Stitch Admin Palette (Light) */
+  --surface: #fcf8ff;
+  --on-surface: #1b1b24;
+  --on-surface-variant: #464555;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f5f2ff;
+  --surface-container: #f0ecf9;
+  --surface-container-high: #eae6f4;
+  --surface-container-highest: #e4e1ee;
+  --surface-tint: #4d44e3;
+  --outline: #777587;
+  --outline-variant: #c7c4d8;
+  --secondary-fixed: #e1e0ff;
+  --secondary-container: #6063ee;
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
 }
 
 /* ─── Dark Mode ──────────────────────────────────────────────── */
 .dark {
   /* Background — Navy #0B1220 */
   --background: oklch(0.147 0.04 264.695);
-  --foreground: oklch(0.984 0.003 247.858);   /* #F8FAFC */
+  --foreground: oklch(0.984 0.003 247.858);
+  /* #F8FAFC */
 
   /* Card — #111827 */
   --card: oklch(0.208 0.042 265.755);
@@ -114,11 +175,13 @@
 
   /* Secondary — #172033 */
   --secondary: oklch(0.236 0.056 264.695);
-  --secondary-foreground: oklch(0.807 0.101 251.258);  /* #BFDBFE */
+  --secondary-foreground: oklch(0.807 0.101 251.258);
+  /* #BFDBFE */
 
   /* Muted */
   --muted: oklch(0.208 0.042 265.755);
-  --muted-foreground: oklch(0.801 0.033 252.813);  /* #CBD5E1 */
+  --muted-foreground: oklch(0.801 0.033 252.813);
+  /* #CBD5E1 */
 
   /* Accent — Orange unchanged */
   --accent: oklch(0.769 0.188 70.08);
@@ -131,7 +194,8 @@
   /* Borders — #243041 */
   --border: oklch(0.281 0.053 264.695);
   --input: oklch(0.281 0.053 264.695);
-  --ring: oklch(0.804 0.117 253.067);          /* #93C5FD */
+  --ring: oklch(0.804 0.117 253.067);
+  /* #93C5FD */
 
   /* Sidebar */
   --sidebar: oklch(0.208 0.042 265.755);
@@ -142,6 +206,25 @@
   --sidebar-accent-foreground: oklch(0.807 0.101 251.258);
   --sidebar-border: oklch(0.281 0.053 264.695);
   --sidebar-ring: oklch(0.804 0.117 253.067);
+
+  /* Stitch Admin Palette (Dark Mode - Mapped to Vibly Dark) */
+  --surface: #0b1220;
+  --on-surface: #f8fafc;
+  --on-surface-variant: #cbd5e1;
+  --surface-container-lowest: #050a14;
+  --surface-container-low: #0f172a;
+  --surface-container: #1e293b;
+  --surface-container-high: #334155;
+  --surface-container-highest: #475569;
+  --surface-tint: #818cf8;
+  --outline: #64748b;
+  --outline-variant: #475569;
+  --secondary-fixed: #1e293b;
+  --secondary-container: #334155;
+  --error: #f87171;
+  --on-error: #450a0a;
+  --error-container: #7f1d1d;
+  --on-error-container: #fecaca;
 }
 
 /* ─── Base Styles ────────────────────────────────────────────── */
@@ -149,13 +232,21 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground antialiased;
   }
+
   html {
     @apply font-sans scroll-smooth;
   }
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading font-semibold;
   }
 }
@@ -165,6 +256,7 @@
   .vibly-card {
     @apply bg-card rounded-3xl border border-border shadow-sm;
   }
+
   .online-dot {
     @apply w-2.5 h-2.5 rounded-full bg-[--success] ring-2 ring-background;
   }

@@ -1,14 +1,6 @@
-import AdminAuthGuard from "@/features/admin/components/admin-auth-guard";
-import AdminHeader from "@/features/admin/components/admin-header";
+import { AdminAuthGuard } from "@/features/admin/components/admin-auth-guard";
 import AdminSidebar from "@/features/admin/components/admin-sidebar";
-import type { Metadata } from "next";
-
-
-export const metadata: Metadata = {
-  title: "Vibly Admin",
-  description: "Internal administration panel",
-  robots: { index: false, follow: false },
-};
+import AdminHeader from "@/features/admin/components/admin-header";
 
 export default function AdminDashboardLayout({
   children,
@@ -17,11 +9,13 @@ export default function AdminDashboardLayout({
 }) {
   return (
     <AdminAuthGuard>
-      <div className="flex h-screen bg-[#0B1120] overflow-hidden">
+      <div className="flex min-h-screen w-full bg-white text-gray-900 font-sans">
         <AdminSidebar />
-        <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 bg-white">
           <AdminHeader />
-          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+          <div className="flex-1 overflow-y-auto w-full relative">
+            {children}
+          </div>
         </div>
       </div>
     </AdminAuthGuard>

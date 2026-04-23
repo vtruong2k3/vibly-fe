@@ -3,127 +3,71 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminAuthStore } from "@/store/admin-auth.store";
-import adminApiClient, { adminTokenStorage, tokenGate } from "@/lib/api/admin-axios";
+import { tokenGate, adminTokenStorage } from "@/lib/api/admin-axios";
+import adminApiClient from "@/lib/api/admin-axios";
 import { ADMIN_ENDPOINTS } from "@/lib/api/admin-constants";
-import type { AdminRole, AdminUser } from "@/types/admin.types";
-import { Loader2 } from "lucide-react";
 
-interface Props {
-  children: React.ReactNode;
-  requiredRole?: AdminRole;
-}
+async function silentRefresh(
+    setAdmin: ReturnType<typeof useAdminAuthStore.getState>["setAdmin"],
+    setAuthStatus: ReturnType<typeof useAdminAuthStore.getState>["setAuthStatus"],
+    clearAuth: ReturnType<typeof useAdminAuthStore.getState>["clearAuth"],
+) {
+    try {
+        const { data } = await adminApiClient.post<{
+            success: boolean;
+            data: {
+                accessToken: string;
+                admin: { id: string; email: string; username?: string; role: "ADMIN" | "MODERATOR" };
+            };
+        }>(ADMIN_ENDPOINTS.auth.refresh);
 
-interface RefreshResponse {
-  success: boolean;
-  data: {
-    accessToken: string;
-    admin: { id: string; email: string; role: string };
-  };
-}
-
-/**
- * Wraps admin dashboard routes.
- *
- * On every mount (including F5 refresh), calls /admin/auth/refresh
- * via the HTTP-Only cookie to silently verify the session.
- *
- * authStatus state machine:
- *   'checking'      — Initial state, show loading spinner
- *   'authenticated' — Session confirmed by server, render children
- *   'anonymous'     — No valid session, redirect to /admin/login
- */
-export default function AdminAuthGuard({ children, requiredRole }: Props) {
-  const router = useRouter();
-  const { admin, authStatus, setAdmin, setTotpVerified, setAuthStatus, clearAuth, hasPermission } =
-    useAdminAuthStore();
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function verifySession() {
-      // ── Fast path: token already in RAM ──────────────────────────────────
-      // This happens on normal client-side navigation (login → dashboard).
-      // No need to call /refresh — the token is fresh and valid.
-      if (adminTokenStorage.get()) {
-        setAuthStatus("authenticated");
+        const { accessToken, admin } = data.data;
+        setAdmin(admin, accessToken);
         tokenGate.open();
-        return;
-      }
+        setAuthStatus("authenticated");
+    } catch {
+        clearAuth();
+        tokenGate.close();
+        setAuthStatus("anonymous");
+    }
+}
 
-      // ── Slow path: token wiped (F5 / module reload) ───────────────────────
-      // RAM is empty but LocalStorage may have admin profile (persisted hint).
-      // Must hit /refresh to get a new token via the HTTP-Only cookie.
-      setAuthStatus("checking");
+export function AdminAuthGuard({ children }: { children: React.ReactNode }) {
+    const router = useRouter();
+    const { authStatus, setAdmin, setAuthStatus, clearAuth } = useAdminAuthStore();
 
-      try {
-        // Fire silent refresh — browser auto-sends HTTP-Only cookie
-        const { data } = await adminApiClient.post<RefreshResponse>(
-          ADMIN_ENDPOINTS.auth.refresh,
-        );
-
-        if (cancelled) return;
-
-        const { accessToken, admin: adminProfile } = data.data;
-
-        // RBAC guard — belt-and-suspenders
-        if (!["ADMIN", "MODERATOR"].includes(adminProfile.role)) {
-          clearAuth();
-          setAuthStatus("anonymous");
-          tokenGate.close();
-          router.replace("/admin/login");
-          return;
+    useEffect(() => {
+        // If already authenticated in this tab (token still in RAM), open gate + done.
+        if (adminTokenStorage.get()) {
+            tokenGate.open();
+            setAuthStatus("authenticated");
+            return;
         }
 
-        // Restore in-memory token & confirm session
-        adminTokenStorage.set(accessToken);
-        setAdmin(adminProfile as AdminUser, accessToken);
-        setTotpVerified();
-        setAuthStatus("authenticated");
-        // Open the gate — queued API requests can now fire
-        tokenGate.open();
-      } catch {
-        if (cancelled) return;
-        // Refresh failed (expired / no cookie) → wipe state and redirect
-        clearAuth();
-        setAuthStatus("anonymous");
-        tokenGate.close();
-        router.replace("/admin/login");
-      }
+        // Token was lost (F5 / page reload) — always attempt silent refresh via
+        // the HttpOnly refresh cookie. The middleware already confirmed the cookie
+        // exists before rendering this page.
+        silentRefresh(setAdmin, setAuthStatus, clearAuth);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (authStatus === "anonymous") {
+            router.replace("/admin/login");
+        }
+    }, [authStatus, router]);
+
+    if (authStatus === "checking") {
+        return (
+            <div className="flex min-h-screen w-full items-center justify-center bg-white">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-600 animate-pulse" />
+                    <p className="text-sm font-semibold text-slate-400">Verifying session...</p>
+                </div>
+            </div>
+        );
     }
 
-    verifySession();
+    if (authStatus === "anonymous") return null;
 
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount only
-
-
-  // Role check after auth confirmed
-  useEffect(() => {
-    if (authStatus === "authenticated" && requiredRole && !hasPermission(requiredRole)) {
-      router.replace("/admin");
-    }
-  }, [authStatus, requiredRole, hasPermission, router]);
-
-  // Loading state — show spinner while verifying
-  if (authStatus === "checking") {
-    return (
-      <div className="min-h-screen bg-[#070D1A] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="size-8 text-blue-500 animate-spin" />
-          <p className="text-slate-500 text-sm">Verifying session…</p>
-        </div>
-      </div>
-    );
-  }
-
-  // unauthenticated — redirect handles it, render nothing
-  if (authStatus === "anonymous" || !admin) return null;
-
-  // Role check — render nothing while redirect fires
-  if (requiredRole && !hasPermission(requiredRole)) return null;
-
-  return <>{children}</>;
+    return <>{children}</>;
 }

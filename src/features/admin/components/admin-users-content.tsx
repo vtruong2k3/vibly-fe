@@ -1,244 +1,103 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Search, RefreshCw } from "lucide-react";
-import { ADMIN_QUERY_KEYS } from "@/lib/api/admin-constants";
-import adminUsersService from "@/lib/services/admin-users.service";
-import type { AdminUserListItem, UserStatus, UserRole } from "@/types/admin.types";
+import React, { useState } from "react";
+import { Filter, UserPlus, CheckSquare } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-import { cn } from "@/lib/utils";
-import AdminErrorState from "@/features/admin/components/admin-error-state";
-import AdminTableSkeleton from "@/features/admin/components/admin-table-skeleton";
-import AdminEmptyState from "@/features/admin/components/admin-empty-state";
-import UserRoleBadge from "@/features/admin/components/user-role-badge";
-import UserStatusBadge from "@/features/admin/components/user-status-badge";
-import UserActionMenu from "@/features/admin/components/user-action-menu";
-import UserDetailDrawer from "@/features/admin/components/user-detail-drawer";
-import { useDebounce } from "@/hooks/use-debounce";
+import { UsersTable } from "./users/users-table";
+import { HealthScoreGauge, TopContributors } from "./users/user-metrics";
 
-const STATUS_FILTERS: { label: string; value: UserStatus | "ALL" }[] = [
-  { label: "All",       value: "ALL" },
-  { label: "Active",    value: "ACTIVE" },
-  { label: "Suspended", value: "SUSPENDED" },
-  { label: "Banned",    value: "BANNED" },
-];
 
 export default function AdminUsersContent() {
-  const [search, setSearch]           = useState("");
-  const [statusFilter, setStatusFilter] = useState<UserStatus | "ALL">("ALL");
-  const [cursor, setCursor]           = useState<string | undefined>(undefined);
-  const [cursorStack, setCursorStack] = useState<string[]>([]); // history for Prev
-  const [selectedUser, setSelectedUser] = useState<AdminUserListItem | null>(null);
+    const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
-  const debouncedSearch = useDebounce(search, 300);
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: [
-      ...ADMIN_QUERY_KEYS.users,
-      { search: debouncedSearch, status: statusFilter, cursor },
-    ],
-    queryFn: () =>
-      adminUsersService.list({
-        search:  debouncedSearch || undefined,
-        status:  statusFilter === "ALL" ? undefined : statusFilter,
-        cursor,
-        limit:   20,
-      }),
-    staleTime: 30_000,
-  });
+    const toggleUser = (id: string) => {
+        setSelectedUsers((prev) =>
+            prev.includes(id) ? prev.filter((uid) => uid !== id) : [...prev, id]
+        );
+    };
 
-  const handleRefetch = useCallback(() => { void refetch(); }, [refetch]);
+    const selectAll = (allIds: string[]) => {
+        setSelectedUsers(allIds);
+    };
 
-  const handleNext = () => {
-    if (!data?.meta?.nextCursor) return;
-    setCursorStack((s) => [...s, cursor ?? ""]);
-    setCursor(data.meta?.nextCursor ?? undefined);
-  };
+    const clearSelection = () => {
+        setSelectedUsers([]);
+    };
 
-  const handlePrev = () => {
-    const stack = [...cursorStack];
-    const prev  = stack.pop();
-    setCursorStack(stack);
-    setCursor(prev || undefined);
-  };
+    return (
+        <div className="p-4 lg:p-8 overflow-y-auto w-full max-w-[1400px] mx-auto min-h-[calc(100vh-80px)]">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+                <motion.h2
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="text-2xl font-bold text-slate-900 tracking-tight"
+                >
+                    User Management
+                </motion.h2>
+                <div className="flex flex-wrap gap-2 sm:gap-3">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 transition-all shadow-sm active:scale-95">
+                        <Filter className="w-4 h-4 text-slate-500" />
+                        Filter
+                    </button>
+                    <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200 active:scale-95">
+                        <UserPlus className="w-4 h-4" />
+                        Add User
+                    </button>
+                </div>
+            </div>
 
-  const resetFilters = () => {
-    setSearch("");
-    setStatusFilter("ALL");
-    setCursor(undefined);
-    setCursorStack([]);
-  };
-
-  const users = data?.data ?? [];
-
-  return (
-    <div className="space-y-5">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-white">Users</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Manage and moderate platform users
-          </p>
-        </div>
-        <button
-          onClick={handleRefetch}
-          disabled={isFetching}
-          className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-white/10 text-slate-400 hover:text-white hover:border-white/20 text-xs font-medium transition-colors disabled:opacity-40"
-        >
-          <RefreshCw className={cn("size-3.5", isFetching && "animate-spin")} />
-          Refresh
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-600" />
-          <input
-            id="users-search"
-            type="search"
-            placeholder="Search username or email…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCursor(undefined);
-              setCursorStack([]);
-            }}
-            className="w-full h-9 pl-9 pr-3 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors"
-          />
-        </div>
-
-        {/* Status filter tabs */}
-        <div className="flex gap-1 bg-white/5 rounded-lg p-0.5">
-          {STATUS_FILTERS.map(({ label, value }) => (
-            <button
-              key={value}
-              onClick={() => {
-                setStatusFilter(value);
-                setCursor(undefined);
-                setCursorStack([]);
-              }}
-              className={cn(
-                "px-3 h-7 rounded-md text-xs font-medium transition-colors",
-                statusFilter === value
-                  ? "bg-white/10 text-white"
-                  : "text-slate-500 hover:text-slate-300",
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Stale data warning */}
-      {isError && data && (
-        <div role="alert" className="flex items-center gap-2 rounded-lg bg-orange-500/10 border border-orange-500/20 px-4 py-2.5 text-xs text-orange-400">
-          <span>⚠ Cannot refresh — showing last known data.</span>
-          <button onClick={handleRefetch} className="ml-auto underline underline-offset-2">Retry</button>
-        </div>
-      )}
-
-      {isError && !data && <AdminErrorState onRetry={handleRefetch} />}
-
-      {/* Table */}
-      {(!isError || data) && (
-        isLoading && !data ? (
-          <AdminTableSkeleton rows={8} cols={6} />
-        ) : users.length === 0 ? (
-          <AdminEmptyState message="No users match your filters." />
-        ) : (
-          <div className="rounded-xl border border-white/5 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-white/[0.03] border-b border-white/5">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-slate-500">User</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-slate-500">Role</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-slate-500">Status</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-slate-500">Posts</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-slate-500">Reports Filed</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-slate-500">Last login</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-slate-500 w-10" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.04]">
-                {users.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="hover:bg-white/[0.02] transition-colors cursor-pointer"
-                    onClick={() => setSelectedUser(user)}
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <span className="size-7 rounded-full bg-white/10 flex items-center justify-center text-xs text-slate-400 shrink-0 font-medium">
-                          {user.username[0].toUpperCase()}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-white text-sm font-medium truncate">
-                            {user.username}
-                          </p>
-                          <p className="text-slate-500 text-xs truncate">{user.email}</p>
+            {/* Bulk Action Bar */}
+            <AnimatePresence>
+                {selectedUsers.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.98 }}
+                        className="mb-8 p-4 bg-indigo-600 rounded-2xl flex flex-wrap items-center justify-between shadow-lg shadow-indigo-100 border border-indigo-500 gap-4"
+                    >
+                        <div className="flex items-center gap-4 text-white pl-2">
+                            <CheckSquare className="w-5 h-5 fill-white/20" />
+                            <span className="text-sm font-semibold">
+                                {selectedUsers.length} users selected
+                            </span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <UserRoleBadge role={user.role} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <UserStatusBadge status={user.status} />
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-300 tabular-nums text-xs">
-                      {user._count.posts.toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-xs">
-                      <span className={cn(user._count.reportsFiled > 5 ? "text-red-400 font-medium" : "text-slate-400")}>
-                        {user._count.reportsFiled}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 text-xs">
-                      {user.lastLoginAt
-                        ? new Date(user.lastLoginAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                      <UserActionMenu user={user} onActionComplete={handleRefetch} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
+                        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                            <button className="flex-1 sm:flex-none px-4 py-2 text-sm font-bold text-indigo-50 bg-white/10 hover:bg-white/20 rounded-xl transition-colors">
+                                Message Selected
+                            </button>
+                            <button className="flex-1 sm:flex-none px-4 py-2 text-sm font-bold text-white bg-rose-500 hover:bg-rose-600 rounded-xl transition-all shadow-md shadow-rose-900/10">
+                                Suspend Selected
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-      {/* Cursor pagination */}
-      {(cursorStack.length > 0 || data?.meta?.nextCursor) && (
-        <div className="flex items-center justify-end gap-2 text-xs text-slate-500">
-          <button
-            onClick={handlePrev}
-            disabled={cursorStack.length === 0}
-            className="px-3 h-7 rounded-md border border-white/10 hover:border-white/20 disabled:opacity-40 transition-colors"
-          >
-            Prev
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={!data?.meta?.nextCursor}
-            className="px-3 h-7 rounded-md border border-white/10 hover:border-white/20 disabled:opacity-40 transition-colors"
-          >
-            Next
-          </button>
+            {/* Layout Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+                {/* Table Area */}
+                <div className="col-span-1 md:col-span-12 xl:col-span-9 flex flex-col gap-8">
+                    <UsersTable
+                        selectedUsers={selectedUsers}
+                        onToggleUser={toggleUser}
+                        onSelectAll={selectAll}
+                        onClearSelection={clearSelection}
+                    />
+                </div>
+
+                {/* Sidebar Widgets */}
+                <aside className="col-span-1 md:col-span-12 xl:col-span-3 flex flex-col sm:flex-row xl:flex-col gap-8">
+                    <div className="flex-1">
+                        <HealthScoreGauge score={85} />
+                    </div>
+                    <div className="flex-1">
+                        <TopContributors />
+                    </div>
+                </aside>
+            </div>
         </div>
-      )}
-
-      {/* User detail drawer */}
-      <UserDetailDrawer
-        user={selectedUser}
-        onClose={() => setSelectedUser(null)}
-        onActionComplete={handleRefetch}
-      />
-    </div>
-  );
+    );
 }
