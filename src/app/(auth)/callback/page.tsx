@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -49,7 +49,7 @@ function getFriendlyError(raw: string): string {
 // This page is the landing target after Google redirects back from OAuth.
 // ?auth=success → read one-time cookie, store token, redirect to home
 // ?auth=error   → show error toast, redirect to /login
-export default function AuthCallbackPage() {
+function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const loginWithGoogle = useAuthStore((s) => s.loginWithGoogle);
@@ -107,5 +107,22 @@ export default function AuthCallbackPage() {
         <p className="text-sm font-medium">Completing sign-in...</p>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="flex flex-col items-center gap-4 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-medium">Completing sign-in...</p>
+          </div>
+        </div>
+      }
+    >
+      <CallbackContent />
+    </Suspense>
   );
 }
