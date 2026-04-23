@@ -48,6 +48,41 @@ const adminAnalyticsService = {
     );
     return data.data; // unwrap envelope
   },
+
+  async getReportBreakdown(from?: string, to?: string) {
+    const res = await adminApiClient.get('/admin/analytics/reports/breakdown', { params: { from, to } });
+    return res.data?.data || [];
+  },
+
+  async getPlatformDistribution() {
+    const res = await adminApiClient.get('/admin/analytics/platforms');
+    return res.data?.data || [];
+  },
+
+  async getModerationResolution(from?: string, to?: string) {
+    const res = await adminApiClient.get('/admin/analytics/moderation-resolution', { params: { from, to } });
+    return res.data?.data || [];
+  },
+
+  async getActivityHeatmap(from?: string, to?: string) {
+    const res = await adminApiClient.get('/admin/analytics/activity-heatmap', { params: { from, to } });
+    return res.data?.data || [];
+  },
+
+  async getPostCategories(from?: string, to?: string) {
+    const res = await adminApiClient.get('/admin/analytics/post-categories', { params: { from, to } });
+    return res.data?.data || [];
+  },
+
+  async getModerationQueue() {
+    const res = await adminApiClient.get('/admin/analytics/moderation-queue');
+    return res.data?.data || [];
+  },
+
+  async getSystemStatus() {
+    const res = await adminApiClient.get('/admin/analytics/system-status');
+    return res.data?.data || [];
+  }
 };
 
 export default adminAnalyticsService;

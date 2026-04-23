@@ -12,45 +12,12 @@ import { ADMIN_QUERY_KEYS } from "@/lib/api/admin-constants";
 import adminAnalyticsService from "@/lib/services/admin-analytics.service";
 import type { AnalyticsOverview, AnalyticsTrend, AnalyticsContentTrend } from "@/types/admin.types";
 import { fmtNum } from "@/lib/Helpers";
+import dynamic from "next/dynamic";
 
-// --- Static chart mock data (these charts have no dedicated BE endpoint yet) ---
-
-const platformData = [
-  { name: "Mobile App", value: 58, fill: "#6366F1" },
-  { name: "Web Browser", value: 28, fill: "#8B5CF6" },
-  { name: "Desktop App", value: 9, fill: "#EC4899" },
-  { name: "API / Bot", value: 5, fill: "#F59E0B" },
-];
-
-const moderationResolution = [
-  { day: "Mon", approved: 220, rejected: 34, pending: 45 },
-  { day: "Tue", approved: 310, rejected: 55, pending: 30 },
-  { day: "Wed", approved: 185, rejected: 28, pending: 60 },
-  { day: "Thu", approved: 400, rejected: 70, pending: 25 },
-  { day: "Fri", approved: 290, rejected: 42, pending: 38 },
-  { day: "Sat", approved: 150, rejected: 20, pending: 20 },
-  { day: "Sun", approved: 120, rejected: 15, pending: 18 },
-];
-
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const HOURS = ["0h", "3h", "6h", "9h", "12h", "15h", "18h", "21h"];
-const heatmapData = DAYS.map((day) =>
-  HOURS.map((hour) => ({ day, hour, value: Math.floor(Math.random() * 100) }))
-);
-
-const categories = [
-  { name: "Photos", percentage: 65, color: "bg-indigo-500" },
-  { name: "Text", percentage: 20, color: "bg-violet-500" },
-  { name: "Videos", percentage: 10, color: "bg-fuchsia-500" },
-  { name: "Links", percentage: 5, color: "bg-rose-400" },
-];
-
-const moderationQueue = [
-  { user: "@johndoe_99", reason: "Spam / Bot Behavior", time: "10 mins ago", status: "URGENT" },
-  { user: "@crypto_king", reason: "Harassment", time: "25 mins ago", status: "URGENT" },
-];
+const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 // --- Helpers ---
+
 
 const TOOLTIP_STYLE = {
   borderRadius: "14px",
@@ -76,6 +43,32 @@ interface KpiCardProps {
   isProgress?: boolean;
   progressValue?: number;
   idx: number;
+}
+
+interface PlatformData {
+  name: string;
+  value: number;
+  fill: string;
+}
+
+interface PostCategory {
+  name: string;
+  percentage: number;
+  color: string;
+}
+
+interface ModerationQueueItem {
+  id: string;
+  user: string;
+  reason: string;
+  time: string;
+  status: string;
+}
+
+interface SystemStatusItem {
+  name: string;
+  status: string;
+  color: string;
 }
 
 const KpiCard: React.FC<KpiCardProps> = ({ label, value, trend, isProgress, progressValue, idx }) => (
@@ -140,6 +133,42 @@ export default function AdminDashboardContent() {
     staleTime: 60_000,
   });
 
+  const { data: platformData = [] } = useQuery({
+    queryKey: ["admin-platforms"],
+    queryFn: adminAnalyticsService.getPlatformDistribution,
+    staleTime: 60_000,
+  });
+
+  const { data: moderationResolution = [] } = useQuery({
+    queryKey: ["admin-mod-resolution", from, to],
+    queryFn: () => adminAnalyticsService.getModerationResolution(from, to),
+    staleTime: 60_000,
+  });
+
+  const { data: rawHeatmapData = [] } = useQuery({
+    queryKey: ["admin-heatmap", from, to],
+    queryFn: () => adminAnalyticsService.getActivityHeatmap(from, to),
+    staleTime: 60_000,
+  });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["admin-categories", from, to],
+    queryFn: () => adminAnalyticsService.getPostCategories(from, to),
+    staleTime: 60_000,
+  });
+
+  const { data: moderationQueue = [] } = useQuery({
+    queryKey: ["admin-queue"],
+    queryFn: adminAnalyticsService.getModerationQueue,
+    staleTime: 60_000,
+  });
+
+  const { data: systemStatusDb = [] } = useQuery({
+    queryKey: ["admin-system-status"],
+    queryFn: adminAnalyticsService.getSystemStatus,
+    staleTime: 60_000,
+  });
+
   // Build KPI items from real data
   const kpiItems: KpiCardProps[] = overview
     ? [
@@ -178,11 +207,48 @@ export default function AdminDashboardContent() {
 
   const volumeChartData = buildVolumeChart();
 
-  const systemStatus = [
-    { name: "API Gateway", status: overviewError ? "Degraded" : "Operational", color: overviewError ? "bg-amber-400" : "bg-emerald-500" },
-    { name: "Database Main", status: "Operational", color: "bg-emerald-500" },
-    { name: "CDN Delivery", status: "Operational", color: "bg-emerald-500" },
+  const systemStatus = systemStatusDb.length > 0 ? systemStatusDb : [
+    { name: "API Gateway", status: overviewError ? "Degraded" : "Loading...", color: overviewError ? "bg-amber-400" : "bg-slate-300" },
+    { name: "Database Main", status: "Loading...", color: "bg-slate-300" },
+    { name: "Background Jobs", status: "Loading...", color: "bg-slate-300" },
   ];
+
+  // Prepare ApexCharts Heatmap
+  const heatmapSeries = React.useMemo(() => {
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    return days.map(d => {
+      const dataForDay = rawHeatmapData.filter((r: any) => r.day === d);
+      return {
+        name: d,
+        data: dataForDay.map((r: any) => ({ x: r.hour, y: r.value }))
+      };
+    });
+  }, [rawHeatmapData]);
+
+  const heatmapOptions: any = {
+    chart: { type: 'heatmap', toolbar: { show: false }, fontFamily: 'inherit' },
+    plotOptions: {
+      heatmap: {
+        shadeIntensity: 0.5,
+        radius: 8,
+        useFillColorAsStroke: false,
+        colorScale: {
+          ranges: [
+            { from: 0, to: 10, color: '#F1F5F9', name: 'Low' },
+            { from: 11, to: 40, color: '#E0E7FF', name: 'Medium' },
+            { from: 41, to: 75, color: '#818CF8', name: 'High' },
+            { from: 76, to: 100, color: '#4338CA', name: 'Peak' }
+          ]
+        }
+      }
+    },
+    dataLabels: { enabled: false },
+    stroke: { width: 3, colors: ['#ffffff'] },
+    xaxis: { labels: { style: { colors: '#94A3B8', fontWeight: 600 } }, axisTicks: { show: false }, axisBorder: { show: false } },
+    yaxis: { labels: { style: { colors: '#94A3B8', fontWeight: 600 } } },
+    grid: { show: false },
+    tooltip: { theme: 'light' },
+  };
 
   return (
     <main className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto">
@@ -261,7 +327,7 @@ export default function AdminDashboardContent() {
             <button className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={18} /></button>
           </div>
           <div className="space-y-5 pt-2">
-            {categories.map((cat, idx) => (
+            {categories.map((cat: PostCategory, idx: number) => (
               <div key={idx} className="space-y-1.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600 font-semibold">{cat.name}</span>
@@ -323,14 +389,14 @@ export default function AdminDashboardContent() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={platformData} cx="50%" cy="50%" innerRadius={60} outerRadius={88} paddingAngle={3} dataKey="value" stroke="none">
-                    {platformData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+                    {platformData.map((entry: PlatformData, i: number) => <Cell key={i} fill={entry.fill} />)}
                   </Pie>
                   <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v) => [`${v}%`]} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 mt-1">
-              {platformData.map((p) => (
+              {platformData.map((p: PlatformData) => (
                 <div key={p.name} className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: p.fill }} />
                   <span className="text-xs font-semibold text-slate-500 truncate">{p.name}</span>
@@ -344,46 +410,18 @@ export default function AdminDashboardContent() {
 
       {/* Row 3: Activity Heatmap */}
       <div className="bg-white border border-slate-100 p-6 rounded-[28px] shadow-sm">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-2">
           <SectionTitle title="User Activity Heatmap (By Day & Hour)" />
           <button className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={18} /></button>
         </div>
-        <div className="overflow-x-auto">
-          <div className="min-w-[340px] space-y-1">
-            <div className="flex ml-9 gap-1 mb-1">
-              {HOURS.map((h) => (
-                <div key={h} className="flex-1 text-center text-[9px] font-bold text-slate-400 tracking-wide">{h}</div>
-              ))}
+        <div className="w-full">
+          {rawHeatmapData.length > 0 ? (
+            <ReactApexChart options={heatmapOptions} series={heatmapSeries} type="heatmap" height={320} />
+          ) : (
+            <div className="h-[320px] bg-slate-50 animate-pulse rounded-xl flex items-center justify-center text-slate-400 text-sm font-semibold">
+              Loading map...
             </div>
-            {heatmapData.map((row, di) => (
-              <div key={di} className="flex items-center gap-1">
-                <span className="w-8 text-[10px] font-bold text-slate-400 tracking-wide shrink-0">{DAYS[di]}</span>
-                {row.map((cell, hi) => {
-                  const level = Math.floor(cell.value / 25);
-                  const colors = ["bg-slate-100", "bg-indigo-100", "bg-indigo-400", "bg-indigo-700"];
-                  return (
-                    <motion.div
-                      key={hi}
-                      initial={{ opacity: 0, scale: 0.4 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: (di * 8 + hi) * 0.006, type: "spring", stiffness: 200 }}
-                      whileHover={{ scale: 1.25, zIndex: 10 }}
-                      title={`${cell.day} ${cell.hour} — ${cell.value}% activity`}
-                      className={`flex-1 aspect-square rounded-md cursor-default ${colors[level]}`}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-            <div className="flex items-center gap-2.5 mt-4 pt-3 border-t border-slate-50">
-              <span className="text-[10px] text-slate-400 font-semibold">Less</span>
-              {["bg-slate-100", "bg-indigo-100", "bg-indigo-400", "bg-indigo-700"].map((cls, i) => (
-                <div key={i} className={`w-5 h-5 rounded-md ${cls}`} />
-              ))}
-              <span className="text-[10px] text-slate-400 font-semibold">More</span>
-              <span className="ml-auto text-[10px] text-slate-400 italic">Hover for details</span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -405,7 +443,7 @@ export default function AdminDashboardContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {moderationQueue.map((item, idx) => (
+              {moderationQueue.map((item: ModerationQueueItem, idx: number) => (
                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
                   <td className="py-3 text-sm font-bold text-slate-900">{item.user}</td>
                   <td className="py-3 text-sm text-slate-500">{item.reason}</td>
@@ -424,7 +462,7 @@ export default function AdminDashboardContent() {
           <div className="bg-white border border-slate-100 p-6 rounded-[28px] shadow-sm space-y-4">
             <SectionTitle title="System Status" />
             <div className="space-y-3">
-              {systemStatus.map((s, idx) => (
+              {systemStatus.map((s: SystemStatusItem, idx: number) => (
                 <div key={idx} className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-slate-600">{s.name}</span>
                   <div className="flex items-center gap-2">
