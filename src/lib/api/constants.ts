@@ -135,6 +135,12 @@ export const ENDPOINTS = {
     reports: "/moderation/reports",
     action: "/moderation/action",
   },
+
+  // ── Verification (KYC) ────────────────────────────────────────────────────
+  verification: {
+    submit: "/verification/submit",
+    myStatus: "/verification/my-status",
+  },
 } as const;
 
 // ─── React Query Keys ─────────────────────────────────────────────────────────
@@ -154,4 +160,5 @@ export const QUERY_KEYS = {
   settings: ["settings"] as const,
   presenceStatuses: (ids: string[]) => ["presence", ids.join(",")] as const,
   postComments: (postId: string) => ["comments", postId] as const,
+  myVerification: ["verification", "me"] as const,
 } as const;

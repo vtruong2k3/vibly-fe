@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePresenceStore } from "@/store/presence.store";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 
 export interface BaseUser {
   id?: string;
@@ -15,6 +16,7 @@ export interface BaseUser {
   avatarUrl: string | null;
   isOnline?: boolean;
   lastSeenAt?: string | null;
+  isVerified?: boolean;
 }
 
 interface UserHeaderProps {
@@ -94,6 +96,7 @@ export function UserHeader({
         >
           {user.displayName}
         </span>
+        {user.isVerified && <VerifiedBadge size="sm" />}
         {showOnlineBadge && isOnline && (
           <Badge
             variant="secondary"

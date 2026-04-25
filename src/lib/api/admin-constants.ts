@@ -79,6 +79,14 @@ export const ADMIN_ENDPOINTS = {
   settings: {
     base: "/admin/settings",
   },
+
+  // ── KYC / Verification ────────────────────────────────────────────────────
+  kyc: {
+    list: "/admin/kyc",
+    byId: (id: string) => `/admin/kyc/${id}`,
+    review: (id: string) => `/admin/kyc/${id}/review`,
+    toggleBadge: (userId: string) => `/admin/kyc/users/${userId}/badge`,
+  },
 } as const;
 
 // ─── Admin React Query Keys ───────────────────────────────────────────────────
@@ -114,4 +122,8 @@ export const ADMIN_QUERY_KEYS = {
 
   // Moderation
   moderationKeywords: ["admin", "moderation", "keywords"] as const,
+
+  // KYC / Verification
+  kyc: ["admin", "kyc"] as const,
+  kycRequest: (id: string) => ["admin", "kyc", id] as const,
 } as const;

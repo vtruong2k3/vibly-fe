@@ -13,6 +13,7 @@ import {
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,7 +43,7 @@ interface ProfileHeaderProps {
 // ─── ProfileHeader ────────────────────────────────────────────────────────────
 export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
+
   const { status, requestId, isLoading } = useFriendshipStatus(profile.id);
   const sendRequest = useSendFriendRequest();
   const removeFriend = useRemoveFriend();
@@ -200,8 +201,9 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
               </AvatarFallback>
             </Avatar>
             <div className="mb-2 sm:mb-0 sm:pt-2">
-              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-foreground tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-foreground tracking-tight flex items-center gap-2">
                 {profile.displayName || profile.username}
+                {profile.isVerified && <VerifiedBadge size="md" className="shrink-0 leading-none" />}
               </h1>
               <p className="text-[15px] text-muted-foreground font-medium mt-0.5">
                 {profile.bio || `@${profile.username}`}
@@ -213,18 +215,18 @@ export function ProfileHeader({ profile, isCurrentUser }: ProfileHeaderProps) {
           <div className="flex items-center justify-start sm:justify-end gap-3 z-10 mb-2 mt-4 sm:mt-0">
             {isCurrentUser ? (
               <>
-                <Button 
-                  className="rounded-full h-10 px-6 font-semibold shadow-sm" 
+                <Button
+                  className="rounded-full h-10 px-6 font-semibold shadow-sm"
                   variant="outline"
                   onClick={() => setIsEditModalOpen(true)}
                 >
                   <Edit2 className="h-4 w-4 mr-2" />
                   Chỉnh sửa trang cá nhân
                 </Button>
-                <ProfileEditModal 
-                  isOpen={isEditModalOpen} 
-                  onOpenChange={setIsEditModalOpen} 
-                  profile={profile as any} 
+                <ProfileEditModal
+                  isOpen={isEditModalOpen}
+                  onOpenChange={setIsEditModalOpen}
+                  profile={profile as any}
                 />
               </>
             ) : (

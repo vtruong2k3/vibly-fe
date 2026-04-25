@@ -37,6 +37,8 @@ export interface AdminUserListItem {
   avatar?: string;
   role: UserRole;
   status: UserStatus;
+  isVerified: boolean;
+  verifiedAt: string | null;
   emailVerifiedAt: string | null;
   lastLoginAt: string | null;
   createdAt: string;
@@ -63,6 +65,32 @@ export interface BulkActionDto {
   userIds: string[];
   action: BulkUserAction;
   reason: string;
+}
+
+// ─── KYC Verification ────────────────────────────────────────────────────────
+export type VerificationStatus = "PENDING" | "APPROVED" | "REJECTED" | "REVOKED";
+
+export interface KycRequest {
+  id: string;
+  status: VerificationStatus;
+  idType: string;
+  legalName: string;
+  frontDocUrl: string;
+  backDocUrl?: string | null;
+  selfieUrl: string;
+  reviewNote?: string | null;
+  reviewedAt?: string | null;
+  submittedAt: string;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    isVerified: boolean;
+  };
+  reviewer?: {
+    username: string;
+    role: string;
+  } | null;
 }
 
 // ─── Posts ────────────────────────────────────────────────────────────────────

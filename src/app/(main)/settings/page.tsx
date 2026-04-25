@@ -4,6 +4,7 @@ import { AccountForm } from "@/features/settings/components/account-form";
 import { PrivacyForm } from "@/features/settings/components/privacy-form";
 import { NotificationForm } from "@/features/settings/components/notification-form";
 import { SecurityForm } from "@/features/settings/components/security-form";
+import VerificationForm from "@/features/settings/components/verification-form";
 
 export const metadata: Metadata = {
   title: "Settings | Vibly",
@@ -41,6 +42,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             {tab === "privacy" && <PrivacyForm />}
             {tab === "notifications" && <NotificationForm />}
             {tab === "security" && <SecurityForm />}
+            {tab === "verification" && <VerificationForm />}
           </div>
         </div>
       </div>

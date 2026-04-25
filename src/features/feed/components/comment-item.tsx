@@ -5,6 +5,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { cn } from "@/lib/utils";
+import { VerifiedBadge } from "@/components/ui/verified-badge";
 import type { PostComment, User } from "@/types";
 
 // ─── CommentItem ───────────────────────────────────────────────────
@@ -31,9 +32,10 @@ export function CommentItem({ comment, onReply }: CommentItemProps) {
         <div className="bg-muted/50 rounded-[20px] px-3.5 py-2.5 inline-block max-w-full">
           <Link
             href={`/profile/${comment.author.username}`}
-            className="text-[13px] font-bold text-foreground hover:underline"
+            className="text-[13px] font-bold text-foreground hover:underline inline-flex items-center gap-1"
           >
             {comment.author.displayName}
+            {comment.author.isVerified && <VerifiedBadge size="sm" />}
           </Link>
           <p className="text-[14px] text-foreground leading-[1.4] mt-1 break-words">
             {comment.content}

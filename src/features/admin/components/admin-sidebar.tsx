@@ -10,7 +10,8 @@ import {
   MessageSquare,
   BarChart3,
   Settings,
-  ShieldUser
+  ShieldUser,
+  ShieldCheck,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -21,6 +22,7 @@ const navItems = [
   { id: 'users', href: '/admin/users', label: 'Users', icon: Users },
   { id: 'posts', href: '/admin/posts', label: 'Posts', icon: FileText },
   { id: 'reports', href: '/admin/reports', label: 'Reports', icon: AlertCircle },
+  { id: 'kyc', href: '/admin/kyc', label: 'KYC Verification', icon: ShieldCheck },
   { id: 'communities', href: '/admin/communities', label: 'Communities', icon: Users2 },
   { id: 'messages', href: '/admin/messages', label: 'Messages', icon: MessageSquare },
   { id: 'analytics', href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
@@ -56,8 +58,8 @@ export default function AdminSidebar() {
               href={item.href}
               key={item.id}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 relative ${isActive
-                  ? 'bg-indigo-50 text-indigo-700 font-medium'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                ? 'bg-indigo-50 text-indigo-700 font-medium'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                 }`}
             >
               <item.icon size={20} className={isActive ? 'text-indigo-600' : 'text-gray-400'} />

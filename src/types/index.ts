@@ -10,6 +10,7 @@ export interface User {
   avatarUrl: string | null;
   bio: string | null;
   isOnline: boolean;
+  isVerified?: boolean;
   createdAt: string; // ISO 8601
 }
 
@@ -83,6 +84,7 @@ export interface AuthUser {
   displayName: string;
   avatarUrl: string | null;
   email: string;
+  isVerified?: boolean;
 }
 
 // ─── Navigation ─────────────────────────────────────────────────

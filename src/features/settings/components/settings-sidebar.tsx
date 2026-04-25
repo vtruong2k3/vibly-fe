@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { User, Lock, Bell, Shield } from "lucide-react";
+import { User, Lock, Bell, Shield, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const sidebarNavItems = [
@@ -26,6 +26,11 @@ const sidebarNavItems = [
     id: "security",
     icon: Shield,
   },
+  {
+    title: "Xác minh",
+    id: "verification",
+    icon: ShieldCheck,
+  },
 ];
 
 export function SettingsSidebar() {
@@ -37,7 +42,7 @@ export function SettingsSidebar() {
       {sidebarNavItems.map((item) => {
         const Icon = item.icon;
         const isActive = currentTab === item.id;
-        
+
         return (
           <Link
             key={item.id}
